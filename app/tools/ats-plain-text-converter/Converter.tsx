@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import posthog from "posthog-js";
 import { analyzeResume, grade, recommendations, SAMPLE_RESUME, TARGET_SCORE, type AtsResult } from "@/lib/ats";
 import styles from "./converter.module.css";
 
@@ -8,11 +9,13 @@ const TOOL_SLUG = "ats-plain-text-converter";
 
 type DataLayer = Array<Record<string, unknown>>;
 function track(event: string, props: Record<string, unknown> = {}) {
+  const payload = { tool_slug: TOOL_SLUG, ...props };
+  // Send to PostHog when configured (no-op without a key).
+  if (process.env.NEXT_PUBLIC_POSTHOG_KEY) posthog.capture(event, payload);
+  // Keep dataLayer too, for any GTM consumer / local debugging.
   const w = window as unknown as { dataLayer?: DataLayer };
   w.dataLayer = w.dataLayer || [];
-  w.dataLayer.push({ event, tool_slug: TOOL_SLUG, ...props });
-  // eslint-disable-next-line no-console
-  console.log("[track]", event, { tool_slug: TOOL_SLUG, ...props });
+  w.dataLayer.push({ event, ...payload });
 }
 
 export default function Converter() {

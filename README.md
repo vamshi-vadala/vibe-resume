@@ -64,6 +64,22 @@ Open [http://localhost:3000/tools/ats-plain-text-converter](http://localhost:300
 | `npm start` | Serve the production build |
 | `npm run test:e2e` | Playwright theme + contrast tests (light & dark) |
 
+## Analytics
+
+PostHog captures pageviews and the tool's funnel events (`tool_started`, `tool_completed`,
+`result_interacted`, `cta_clicked` — each tagged with `tool_slug`). Wiring lives in
+`app/providers.tsx`; the `track()` helper in `Converter.tsx` forwards events.
+
+It's gated on an env var, so the app runs fine without it (events become no-ops). To enable:
+
+| Variable | Example | Where |
+|----------|---------|-------|
+| `NEXT_PUBLIC_POSTHOG_KEY` | `phc_...` (PostHog project key) | Vercel env (Production + Preview) + local `.env.local` |
+| `NEXT_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | same |
+
+`NEXT_PUBLIC_*` vars are embedded at build time; the CI workflow's `vercel pull` fetches them from
+the Vercel project before building, so set them in Vercel for production/preview.
+
 ## Roadmap
 
 Next tools in the cluster (priority order): PDF Resume → Website (flagship), Developer Resume → Portfolio, ThemeDeck, GitHub → Portfolio, and others — all built on the template above with an internal-link mesh between them.
