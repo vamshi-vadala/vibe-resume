@@ -1,0 +1,48 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests (light + dark, axe contrast) — hard gate
+        run: npm run test:e2e
+
+      # Deploy steps activate automatically once VERCEL_TOKEN secret is set.
+      # Until then, the workflow runs tests only (no misleading deploy failures).
+      - name: Install Vercel CLI
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: npm i -g vercel
+
+      - name: Pull Vercel environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: vercel pull --yes --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }} --token=$VERCEL_TOKEN
+
+      - name: Build
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=$VERCEL_TOKEN
+
+      - name: Deploy
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=$VERCEL_TOKEN
