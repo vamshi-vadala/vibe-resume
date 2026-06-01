@@ -80,6 +80,11 @@ It's gated on an env var, so the app runs fine without it (events become no-ops)
 `NEXT_PUBLIC_*` vars are embedded at build time; the CI workflow's `vercel pull` fetches them from
 the Vercel project before building, so set them in Vercel for production/preview.
 
+> ⚠️ **Do not mark these as "Sensitive" in Vercel.** Sensitive vars are withheld from the build,
+> which silently breaks `NEXT_PUBLIC_` inlining (the key won't reach the browser and PostHog won't
+> load). Add them as normal plaintext vars. Sensitive can't be toggled off — delete and re-add.
+> The `phc_` project key is publishable/client-side by design, so this is safe.
+
 ## Roadmap
 
 Next tools in the cluster (priority order): PDF Resume → Website (flagship), Developer Resume → Portfolio, ThemeDeck, GitHub → Portfolio, and others — all built on the template above with an internal-link mesh between them.
