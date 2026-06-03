@@ -15,13 +15,13 @@ const present = existsSync(SAMPLES);
 
 // Expected header extraction per sample (title omitted where the source PDF
 // genuinely destroys it via uniform letter-spacing — a clean blank is correct).
-const EXPECT: Record<string, { name: string; title?: string }> = {
-  "Dublin-Resume-Template-Modern.pdf": { name: "Esther Scott", title: "" },
-  "Moscow-Creative-Resume-Template.pdf": { name: "MICHELLE LOPEZ", title: "Fashion Designer" },
-  "New-York-Resume-Template-Creative.pdf": { name: "ROBERT COOPER", title: "" },
-  "Personal-trainer-resume-example-3.pdf": { name: "Charly Dolman", title: "Personal Trainer" },
-  "Stockholm-Resume-Template-Simple.pdf": { name: "Jason Miller", title: "Amazon Associate" },
-  "Sydney-Resume-Template-Modern.pdf": { name: "Kristen Connelly", title: "" },
+const EXPECT: Record<string, { name: string; title?: string; hasSections?: boolean }> = {
+  "Dublin-Resume-Template-Modern.pdf": { name: "Esther Scott", title: "", hasSections: true },
+  "Moscow-Creative-Resume-Template.pdf": { name: "MICHELLE LOPEZ", title: "Fashion Designer", hasSections: true },
+  "New-York-Resume-Template-Creative.pdf": { name: "ROBERT COOPER", title: "", hasSections: true },
+  "Personal-trainer-resume-example-3.pdf": { name: "Charly Dolman", title: "Personal Trainer", hasSections: true },
+  "Stockholm-Resume-Template-Simple.pdf": { name: "Jason Miller", title: "Amazon Associate", hasSections: true },
+  "Sydney-Resume-Template-Modern.pdf": { name: "Kristen Connelly", title: "", hasSections: true },
   "Ux-designer-resume-example-5.pdf": { name: "John Huber", title: "UX Designer" },
 };
 
@@ -51,5 +51,9 @@ for (const [file, exp] of Object.entries(EXPECT)) {
     assert.equal(d.name, exp.name, "name");
     if (exp.title !== undefined) assert.equal(d.title, exp.title, "title");
     assert.equal(d.empty, false, "should not be empty");
+    if (exp.hasSections) assert.ok(d.sections.length > 0, "should have at least one section");
+    // Skills must never contain date ranges or obvious fragments.
+    assert.ok(!d.skills.some((s) => /[—–]/.test(s) || /\b(19|20)\d{2}\b/.test(s)), "no date ranges in skills");
+    assert.ok(!d.skills.some((s) => /^\s*[a-z]/.test(s)), "no lowercase-start fragments in skills");
   });
 }

@@ -103,3 +103,48 @@ test("normal prose is left untouched by letter-spacing recovery", () => {
   const [line] = linesFromItems([item("Led a team of four designers across web", 40, 600, 300, 11)], 600);
   assert.equal(line.text, "Led a team of four designers across web");
 });
+
+// ---- #4a: heading glued to first content item ----------------------------
+
+test("heading glued to content is split: heading starts a new section, remainder is first item", () => {
+  const d = parseResume([
+    L("Jane Doe", 18),
+    L("Employment History Senior Fashion Designer at Escada, Milan", 12),
+    L("Designed key product lines.", 10),
+  ]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.ok(exp, "Experience section detected");
+  assert.ok(exp!.items.some((i) => i.includes("Senior Fashion Designer")), "first item recovered");
+});
+
+test("heading-only line still starts a section normally", () => {
+  const d = parseResume([L("Jane Doe", 18), L("Experience", 12), L("Built things.", 10)]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.ok(exp, "Experience section detected");
+  assert.equal(exp!.items[0], "Built things.");
+});
+
+// ---- #4b: skills-sidebar noise -------------------------------------------
+
+test("date ranges are rejected from skills chips", () => {
+  const d = parseResume([
+    L("Jane Doe", 18),
+    L("Skills", 12),
+    L("Figma, July 2021 — Present, January 2015 — June 2017, Adobe", 10),
+  ]);
+  assert.ok(d.skills.includes("Figma"), "Figma kept");
+  assert.ok(d.skills.includes("Adobe"), "Adobe kept");
+  assert.ok(!d.skills.some((s) => s.includes("2021") || s.includes("2017")), "date ranges rejected");
+});
+
+test("standalone place names and short fragments are rejected from skills chips", () => {
+  const d = parseResume([
+    L("Jane Doe", 18),
+    L("Skills", 12),
+    L("Design Systems, boosting, San Jacinto, of $67, User Research", 10),
+  ]);
+  assert.ok(d.skills.includes("Design Systems"), "Design Systems kept");
+  assert.ok(d.skills.includes("User Research"), "User Research kept");
+  assert.ok(!d.skills.includes("boosting"), "lowercase fragment rejected");
+  assert.ok(!d.skills.some((s) => s.startsWith("of ")), "prepositional fragment rejected");
+});

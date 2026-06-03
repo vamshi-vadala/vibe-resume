@@ -77,12 +77,37 @@ function splitSkills(items: string[]): string[] {
   for (const raw of items) {
     for (const piece of raw.split(/[,|•·▪●◦‣∙/]|\s{2,}|\s•\s/)) {
       const s = piece.replace(BULLET_LEAD, "").trim();
-      // Keep short, label-like chips; reject sentence fragments (trailing period,
-      // too long, or ending in a comma-less clause).
-      if (s && s.length <= 32 && !/[.;]$/.test(s) && s.split(/\s+/).length <= 5) out.push(s);
+      if (!s || s.length > 32) continue;
+      if (/[.;]$/.test(s)) continue;                      // sentence fragment
+      if (s.split(/\s+/).length > 5) continue;            // too many words
+      if (/[—–]/.test(s) || /\b(19|20)\d{2}\b/.test(s)) continue; // date range
+      if (/^\s*[a-z]/.test(s)) continue;                  // lowercase-start = sidebar label/fragment
+      if (/^(of|at|in|for|the|and|or|to|a|an)\b/i.test(s)) continue; // preposition-started fragment
+      out.push(s);
     }
   }
   return [...new Set(out)].slice(0, 30);
+}
+
+/**
+ * Try to match a section heading at the START of a line that also contains
+ * content (heading glued to first item by the PDF layout).
+ * Returns { label, skills, remainder } when the first 1–3 words match, else null.
+ */
+function matchSectionPrefix(text: string): { label: string; skills: boolean; remainder: string } | null {
+  const words = text.trim().split(/\s+/);
+  for (let n = 1; n <= Math.min(3, words.length - 1); n++) {
+    const prefix = words.slice(0, n).join(" ");
+    const hit = matchSection(prefix);
+    if (hit) return { ...hit, remainder: words.slice(n).join(" ").replace(BULLET_LEAD, "").trim() };
+    // also try n+1 words for two-word headings like "Employment History"
+    if (n < words.length - 1) {
+      const prefix2 = words.slice(0, n + 1).join(" ");
+      const hit2 = matchSection(prefix2);
+      if (hit2) return { ...hit2, remainder: words.slice(n + 1).join(" ").replace(BULLET_LEAD, "").trim() };
+    }
+  }
+  return null;
 }
 
 // ----- Column-aware line reconstruction ------------------------------------
@@ -275,13 +300,22 @@ function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
     current = null;
   };
 
-  const firstSectionIdx = lines.findIndex((l) => matchSection(l.text));
+  const firstSectionIdx = lines.findIndex((l) => matchSection(l.text) || matchSectionPrefix(l.text));
   const bodyStart = firstSectionIdx === -1 ? nameIdx + 1 : firstSectionIdx;
   for (const line of lines.slice(bodyStart)) {
+    // Exact heading match (normal case).
     const hit = matchSection(line.text);
     if (hit) {
       flush();
       current = { label: hit.label, skills: hit.skills, items: [] };
+      continue;
+    }
+    // Heading glued to first content item ("Employment History Senior Designer…").
+    const prefix = matchSectionPrefix(line.text);
+    if (prefix) {
+      flush();
+      current = { label: prefix.label, skills: prefix.skills, items: [] };
+      if (prefix.remainder && prefix.remainder !== name) current.items.push(prefix.remainder);
       continue;
     }
     if (!current) continue;              // stray line before any heading
