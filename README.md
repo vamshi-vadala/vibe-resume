@@ -2,9 +2,29 @@
 
 A suite of free, SEO-driven micro-tools that turn resumes and profiles into shareable web pages — each tool an indexed landing page that funnels to the Vibe Resume product.
 
-This repo is the implementation of that programmatic-SEO plan. **One tool is built so far**, plus the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) the rest of the cluster will reuse.
+This repo is the implementation of that programmatic-SEO plan. **Two tools are built so far**, plus the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) the rest of the cluster will reuse.
 
 ## Built so far
+
+### PDF Resume → Website — `/tools/pdf-resume-to-website`
+
+The flagship. Upload a PDF resume and instantly preview it as a clean, responsive personal website.
+
+- **100% client-side parsing** — the PDF's text layer is read in the browser with a
+  self-hosted [pdf.js](https://mozilla.github.io/pdf.js/) worker; the file never leaves the
+  device (safe for a resume full of personal contact info).
+- **Structured extraction** — `lib/resume.ts` is a pure, dependency-free parser that turns
+  raw text into `{ name, title, contactLines, summary, sections, skills }` using
+  heading-keyword + contact-regex heuristics, grouping PDF text items into lines by
+  y-position.
+- **Polished website preview** — name + avatar initials, role, contact, About, skill chips
+  and section lists, rendered inside a faux browser frame. All surfaces use the shared
+  semantic theme tokens (WCAG-AA in light & dark).
+- **Graceful failure** — scanned/image-only PDFs (no text layer) get a friendly re-export
+  message instead of a crash.
+- **Result-gated CTA + tracking** — same funnel events (`tool_started`, `tool_completed`,
+  `result_interacted`, `cta_clicked`) and UTM-tagged "Publish on Vibe Resume" CTAs as the
+  ATS tool, stamped with `tool_slug: "pdf-resume-to-website"`.
 
 ### ATS Plain-Text Resume Converter — `/tools/ats-plain-text-converter`
 
@@ -39,12 +59,26 @@ app/
     page.tsx                          # server component: SEO metadata + JSON-LD + FAQ
     Converter.tsx                     # client component: UI, scoring, tracking
     converter.module.css
+  tools/pdf-resume-to-website/
+    page.tsx                          # server component: SEO metadata + JSON-LD + FAQ
+    Converter.tsx                     # client component: PDF extract, preview, tracking
+    converter.module.css
 lib/
   ats.ts                              # pure ATS analysis logic
+  resume.ts                           # pure resume text → structured website data
+public/
+  pdf.worker.min.mjs                  # self-hosted pdf.js worker (see note below)
 e2e/
-  theme.spec.ts                       # computed-style + axe contrast tests
+  theme.spec.ts                       # ATS: computed-style + axe contrast tests
+  pdf-tool.spec.ts                    # PDF→website: computed-style + axe contrast tests
 playwright.config.ts                  # runs tests in light & dark schemes
 ```
+
+> **pdf.js worker:** `public/pdf.worker.min.mjs` is copied from
+> `node_modules/pdfjs-dist/build/` so its version matches the installed `pdfjs-dist` API.
+> It's self-hosted (not loaded from a CDN) to avoid a third-party runtime script and keep
+> parsing fully local. **Re-copy it after upgrading `pdfjs-dist`:**
+> `cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/`
 
 ## Getting started
 
@@ -87,4 +121,4 @@ the Vercel project before building, so set them in Vercel for production/preview
 
 ## Roadmap
 
-Next tools in the cluster (priority order): PDF Resume → Website (flagship), Developer Resume → Portfolio, ThemeDeck, GitHub → Portfolio, and others — all built on the template above with an internal-link mesh between them.
+Next tools in the cluster (priority order): Developer Resume → Portfolio, ThemeDeck, GitHub → Portfolio, and others — all built on the template above with an internal-link mesh between them. (PDF Resume → Website and the ATS Converter are live.)

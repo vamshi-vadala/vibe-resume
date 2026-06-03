@@ -11,6 +11,11 @@ export const metadata: Metadata = {
 
 const LIVE = [
   {
+    href: "/tools/pdf-resume-to-website",
+    name: "PDF Resume → Website",
+    desc: "Upload a PDF resume and preview it as a clean personal website — in your browser.",
+  },
+  {
     href: "/tools/ats-plain-text-converter",
     name: "ATS Plain-Text Converter",
     desc: "See your resume the way an ATS robot reads it, with a 0–100 score and fixes.",
@@ -18,7 +23,6 @@ const LIVE = [
 ];
 
 const SOON = [
-  { name: "PDF Resume → Website", desc: "Turn a PDF resume into a live personal site." },
   { name: "Developer Resume → Portfolio", desc: "Convert a dev resume into a portfolio site." },
   { name: "GitHub → Portfolio", desc: "Generate a portfolio from just your GitHub username." },
 ];
