@@ -222,51 +222,46 @@ function toLines(input: string | TextLine[]): TextLine[] {
     .filter((l) => l.text.length > 0);
 }
 
-/**
- * Parse extracted resume content into structured website data.
- * @param input either newline-joined text, or font-size-tagged lines from
- *   `linesFromItems` (which enables largest-font name detection).
- */
-export function parseResume(input: string | TextLine[]): ResumeData {
-  const lines = toLines(input);
+interface NameMatch { line: TextLine; name: string; idx: number }
 
-  const empty: ResumeData = {
-    name: "", title: "", contactLines: [], summary: "", sections: [], skills: [], empty: true,
-  };
-  if (lines.length === 0) return empty;
-
-  // --- Name: largest-font name-looking line near the top (falls back to the
-  // first non-contact, non-heading line when font sizes are unavailable).
-  const topCount = Math.max(8, Math.ceil(lines.length * 0.4));
-  const top = lines.slice(0, topCount);
-  let nameLine: TextLine | undefined;
+/** Name = largest-font name-looking line near the top; falls back to the first
+ *  non-contact, non-heading line when font sizes are unavailable (paste path). */
+function detectName(lines: TextLine[]): NameMatch {
+  const top = lines.slice(0, Math.max(8, Math.ceil(lines.length * 0.4)));
+  let best: TextLine | undefined;
   for (const l of top) {
-    if (!looksLikeName(l.text)) continue;
-    if (!nameLine || l.size > nameLine.size) nameLine = l;
+    if (looksLikeName(l.text) && (!best || l.size > best.size)) best = l;
   }
-  if (!nameLine) nameLine = top.find((l) => !isContact(l.text) && !matchSection(l.text)) ?? lines[0];
-  const nameIdx = lines.indexOf(nameLine);
+  const line = best ?? top.find((l) => !isContact(l.text) && !matchSection(l.text)) ?? lines[0];
+  return { line, name: line.text.split(NAME_SEP)[0].trim(), idx: lines.indexOf(line) };
+}
 
-  const name = nameLine.text.split(NAME_SEP)[0].trim();
-  // Title: leftover after the name on its own line, else the next short,
-  // non-contact, non-heading line just below the name.
-  let title = nameLine.text.slice(name.length).replace(/^[\s,|·•–—-]+/, "").trim();
-  if (!title) {
-    for (let i = nameIdx + 1; i < Math.min(lines.length, nameIdx + 4); i++) {
-      const t = lines[i].text;
-      if (isContact(t) || matchSection(t) || SIDEBAR_LABEL.test(t)) continue;
-      if (/\d/.test(t)) continue;       // job titles don't contain digits (skips addresses/dates)
-      if (/[A-Z]{9,}/.test(t)) continue; // run-on from collapsed letter-spacing ("TRAVELAGENT")
-      if (t.split(/\s+/).length <= 8 && t.length <= 60) { title = t; break; }
-    }
+/** Title = leftover after the name on its own line, else the next short,
+ *  non-contact, non-heading, non-address line just below the name. */
+function detectTitle(lines: TextLine[], { line, name, idx }: NameMatch): string {
+  const sameLine = line.text.slice(name.length).replace(/^[\s,|·•–—-]+/, "").trim();
+  if (sameLine) return sameLine;
+  for (let i = idx + 1; i < Math.min(lines.length, idx + 4); i++) {
+    const t = lines[i].text;
+    if (isContact(t) || matchSection(t) || SIDEBAR_LABEL.test(t)) continue;
+    if (/\d/.test(t)) continue;        // job titles don't contain digits (addresses/dates)
+    if (/[A-Z]{9,}/.test(t)) continue; // run-on from collapsed letter-spacing ("TRAVELAGENT")
+    if (t.split(/\s+/).length <= 8 && t.length <= 60) return t;
   }
+  return "";
+}
 
-  // --- Contacts: collect from anywhere (sidebars put them far from the name).
-  const contactLines = [...new Set(
+/** Contact lines, collected from anywhere (sidebars place them far from the name). */
+function collectContacts(lines: TextLine[], nameLine: TextLine): string[] {
+  return [...new Set(
     lines.filter((l) => l !== nameLine && isContact(l.text)).map((l) => l.text.trim())
   )].slice(0, 4);
+}
 
-  // --- Body: walk lines, grouping under the current section heading.
+interface Body { summary: string; sections: ResumeSection[]; skills: string[] }
+
+/** Walk the lines below the header, grouping them under their section headings. */
+function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
   const sections: ResumeSection[] = [];
   let skills: string[] = [];
   let summary = "";
@@ -274,13 +269,9 @@ export function parseResume(input: string | TextLine[]): ResumeData {
 
   const flush = () => {
     if (!current) return;
-    if (current.label === "Summary") {
-      summary = (summary ? summary + " " : "") + current.items.join(" ").trim();
-    } else if (current.skills) {
-      skills = skills.concat(splitSkills(current.items));
-    } else if (current.items.length) {
-      sections.push({ heading: current.label, items: current.items });
-    }
+    if (current.label === "Summary") summary = (summary ? summary + " " : "") + current.items.join(" ").trim();
+    else if (current.skills) skills = skills.concat(splitSkills(current.items));
+    else if (current.items.length) sections.push({ heading: current.label, items: current.items });
     current = null;
   };
 
@@ -299,17 +290,33 @@ export function parseResume(input: string | TextLine[]): ResumeData {
     if (item && item !== name) current.items.push(item);
   }
   flush();
+  return { summary, sections, skills: [...new Set(skills)].slice(0, 30) };
+}
 
-  const skillsUnique = [...new Set(skills)].slice(0, 30);
-  const hasContent = !!(summary || sections.length || skillsUnique.length);
+/**
+ * Parse extracted resume content into structured website data.
+ * @param input either newline-joined text, or font-size-tagged lines from
+ *   `linesFromItems` (which enables largest-font name detection).
+ */
+export function parseResume(input: string | TextLine[]): ResumeData {
+  const lines = toLines(input);
+  if (lines.length === 0) {
+    return { name: "", title: "", contactLines: [], summary: "", sections: [], skills: [], empty: true };
+  }
+
+  const nm = detectName(lines);
+  const title = detectTitle(lines, nm);
+  const contactLines = collectContacts(lines, nm.line);
+  const { summary, sections, skills } = extractBody(lines, nm.name, nm.idx);
+  const hasContent = !!(summary || sections.length || skills.length);
 
   return {
-    name: name || "Your Name",
+    name: nm.name || "Your Name",
     title,
     contactLines,
     summary,
     sections,
-    skills: skillsUnique,
+    skills,
     empty: !hasContent,
   };
 }
