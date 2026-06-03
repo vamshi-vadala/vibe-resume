@@ -1,0 +1,105 @@
+// Pure unit tests for the resume parser. No PDF/browser needed — fast, deterministic,
+// and the safety net that lets us refactor lib/resume.ts without silent regressions.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { parseResume, linesFromItems, type PositionedItem, type TextLine } from "../lib/resume.ts";
+
+const L = (text: string, size = 0): TextLine => ({ text, size });
+const item = (str: string, x: number, y: number, w = 50, size = 12): PositionedItem => ({ str, x, y, w, size });
+
+// ---- parseResume: string (paste) path ------------------------------------
+
+test("parses a simple single-column resume", () => {
+  const d = parseResume(
+    "Jane Doe\nSenior Designer\njane@email.com\n\nSummary\nGreat designer.\n\nSkills\nFigma, Sketch"
+  );
+  assert.equal(d.name, "Jane Doe");
+  assert.equal(d.title, "Senior Designer");
+  assert.equal(d.empty, false);
+  assert.match(d.summary, /Great designer/);
+  assert.deepEqual(d.skills, ["Figma", "Sketch"]);
+  assert.ok(d.contactLines.includes("jane@email.com"));
+});
+
+test("blank / whitespace input is reported empty", () => {
+  assert.equal(parseResume("").empty, true);
+  assert.equal(parseResume("   \n  \t ").empty, true);
+});
+
+// ---- parseResume: TextLine[] (font-size aware) path ----------------------
+
+test("name is the largest-font name-looking line, not the first line", () => {
+  const d = parseResume([
+    L("Profile", 10),
+    L("Some summary text that runs fairly long across the page", 9),
+    L("Esther Scott", 22),
+    L("Travel things", 9),
+  ]);
+  assert.equal(d.name, "Esther Scott");
+});
+
+test("splits 'NAME, Title' on the same line", () => {
+  const d = parseResume([L("MICHELLE LOPEZ, Fashion Designer", 20), L("email@email.com", 8)]);
+  assert.equal(d.name, "MICHELLE LOPEZ");
+  assert.equal(d.title, "Fashion Designer");
+});
+
+test("never uses a sidebar label, address, or letter-spacing run-on as the title", () => {
+  const d = parseResume([
+    L("Esther Scott", 22),
+    L("Details", 9),            // sidebar label
+    L("1515 Pacific Ave", 9),   // address (digits)
+    L("TRAVELAGENT", 12),       // collapsed letter-spacing (9+ caps run)
+  ]);
+  assert.equal(d.title, "");
+});
+
+test("collects contacts globally and keeps skills fragment-free", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Skills", 10),
+    L("Leadership, goals., Adobe Photoshop, an overly long clause that is clearly not a chip", 9),
+    L("linkedin.com/in/jane", 8),
+  ]);
+  assert.ok(d.contactLines.some((c) => c.includes("linkedin")));
+  assert.ok(d.skills.includes("Leadership"));
+  assert.ok(d.skills.includes("Adobe Photoshop"));
+  assert.ok(!d.skills.includes("goals."), "trailing-period fragment rejected");
+  assert.ok(!d.skills.some((s) => s.split(/\s+/).length > 5), "long clause rejected");
+});
+
+// ---- linesFromItems: reading-order reconstruction ------------------------
+
+test("single column: items become lines top-to-bottom, left-to-right", () => {
+  const lines = linesFromItems(
+    [item("World", 140, 700), item("Hello", 40, 700), item("Second", 40, 680)],
+    600
+  );
+  assert.equal(lines[0].text, "Hello World");
+  assert.equal(lines[1].text, "Second");
+});
+
+test("two-column layout: sidebar and main column are not interleaved", () => {
+  const items: PositionedItem[] = [];
+  for (let i = 0; i < 10; i++) {
+    const y = 700 - i * 20;
+    items.push(item(`L${i}`, 40, y, 100));   // left column
+    items.push(item(`R${i}`, 320, y, 100));  // right column
+  }
+  const lines = linesFromItems(items, 600).map((l) => l.text);
+  assert.ok(!lines.some((t) => t.includes("L0") && t.includes("R0")), "rows not glued across the gutter");
+  assert.ok(lines.indexOf("L9") < lines.indexOf("R0"), "left column read fully before right");
+});
+
+test("letter-spaced date line is recovered to readable text", () => {
+  const [line] = linesFromItems(
+    [item("J A N U A R Y 2 0 2 0 — F E B R U A R Y 2 0 2 2", 40, 600, 220, 8)],
+    600
+  );
+  assert.equal(line.text, "JANUARY 2020 — FEBRUARY 2022");
+});
+
+test("normal prose is left untouched by letter-spacing recovery", () => {
+  const [line] = linesFromItems([item("Led a team of four designers across web", 40, 600, 300, 11)], 600);
+  assert.equal(line.text, "Led a team of four designers across web");
+});

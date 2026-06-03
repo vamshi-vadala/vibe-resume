@@ -9,7 +9,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:e2e": "playwright test"
+    "test:unit": "node --experimental-strip-types --test \"test/**/*.test.ts\"",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "next": "16.2.6",

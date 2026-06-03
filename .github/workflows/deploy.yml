@@ -23,6 +23,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Unit tests (pure parser) — fast gate
+        run: npm run test:unit
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
