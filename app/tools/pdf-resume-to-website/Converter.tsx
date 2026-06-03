@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import posthog from "posthog-js";
-import { parseResume, SAMPLE_RESUME_TEXT, type ResumeData } from "@/lib/resume";
+import { parseResume, linesFromItems, SAMPLE_RESUME_TEXT, type ResumeData, type PositionedItem, type TextLine } from "@/lib/resume";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "pdf-resume-to-website";
@@ -17,36 +17,36 @@ function track(event: string, props: Record<string, unknown> = {}) {
   w.dataLayer.push({ event, ...payload });
 }
 
-/** Extract a resume's text layer in-browser. Groups text items into lines by y-position. */
-async function extractPdfText(file: File): Promise<string> {
+/** Extract a resume's text layer in-browser as column-aware, font-size-tagged lines. */
+async function extractPdfLines(file: File): Promise<TextLine[]> {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const buf = await file.arrayBuffer();
   const task = pdfjs.getDocument({ data: buf });
   const doc = await task.promise;
-  const out: string[] = [];
+  const lines: TextLine[] = [];
 
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
+    const pageWidth = page.getViewport({ scale: 1 }).width;
     const content = await page.getTextContent();
-    // Bucket items by rounded y so words on the same visual line stay together.
-    const rows = new Map<number, { x: number; s: string }[]>();
+    const items: PositionedItem[] = [];
     for (const item of content.items) {
       if (!("str" in item) || !item.str) continue;
       const tr = item.transform as number[];
-      const y = Math.round(tr[5]);
-      const x = tr[4];
-      (rows.get(y) ?? rows.set(y, []).get(y)!).push({ x, s: item.str });
+      items.push({
+        str: item.str,
+        x: tr[4],
+        y: tr[5],
+        w: item.width ?? 0,
+        size: Math.hypot(tr[1], tr[3]) || Math.abs(tr[3]),
+      });
     }
-    // y descends down the page; sort top-to-bottom, then left-to-right within a line.
-    for (const y of [...rows.keys()].sort((a, b) => b - a)) {
-      const line = rows.get(y)!.sort((a, b) => a.x - b.x).map((i) => i.s).join(" ");
-      out.push(line.replace(/\s{2,}/g, " ").trim());
-    }
-    out.push(""); // page break
+    // Reconstruct reading order per page (handles two-column sidebars).
+    lines.push(...linesFromItems(items, pageWidth));
   }
   await task.destroy();
-  return out.join("\n");
+  return lines;
 }
 
 export default function Converter() {
@@ -70,8 +70,8 @@ export default function Converter() {
     setLoading(true);
     track("tool_started");
     try {
-      const text = await extractPdfText(f);
-      const parsed = parseResume(text);
+      const lines = await extractPdfLines(f);
+      const parsed = parseResume(lines);
       if (parsed.empty) {
         setData(null);
         setError(
