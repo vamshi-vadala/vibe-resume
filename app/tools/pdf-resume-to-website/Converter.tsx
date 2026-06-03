@@ -17,14 +17,18 @@ function track(event: string, props: Record<string, unknown> = {}) {
   w.dataLayer.push({ event, ...payload });
 }
 
-/** Extract a resume's text layer in-browser as column-aware, font-size-tagged lines. */
-async function extractPdfLines(file: File): Promise<TextLine[]> {
+interface PdfExtract { lines: TextLine[]; photoUrl: string }
+
+/** Extract a resume's text layer in-browser as column-aware, font-size-tagged lines.
+ *  Also attempts to pull the candidate's headshot from the first page. */
+async function extractPdf(file: File): Promise<PdfExtract> {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const buf = await file.arrayBuffer();
   const task = pdfjs.getDocument({ data: buf });
   const doc = await task.promise;
   const lines: TextLine[] = [];
+  let photoUrl = "";
 
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
@@ -42,20 +46,86 @@ async function extractPdfLines(file: File): Promise<TextLine[]> {
         size: Math.hypot(tr[1], tr[3]) || Math.abs(tr[3]),
       });
     }
-    // Reconstruct reading order per page (handles two-column sidebars).
     lines.push(...linesFromItems(items, pageWidth));
+    // Attempt headshot extraction from the first page only.
+    if (p === 1 && !photoUrl) photoUrl = await extractHeadshot(page as unknown as PdfPage);
   }
   await task.destroy();
-  return lines;
+  return { lines, photoUrl };
+}
+
+// Minimal shape of a pdfjs PDFPageProxy we actually use.
+interface PdfPage {
+  getOperatorList(): Promise<{ fnArray: number[]; argsArray: unknown[][] }>;
+  objs: { get(name: string, cb: (v: unknown) => void): void };
+  commonObjs: { get(name: string, cb: (v: unknown) => void): void };
+}
+
+/** Pull the largest portrait/square image from a PDF page as a data URL.
+ *  Returns "" when no suitable image is found or anything fails. */
+async function extractHeadshot(page: PdfPage): Promise<string> {
+  try {
+    const pdfjs = await import("pdfjs-dist");
+    const ops = await page.getOperatorList();
+    type ImgCandidate = { url: string; area: number };
+    const candidates: ImgCandidate[] = [];
+
+    for (let i = 0; i < ops.fnArray.length; i++) {
+      if (ops.fnArray[i] !== pdfjs.OPS.paintImageXObject) continue;
+      const name = ops.argsArray[i][0] as string;
+
+      // Images may live in page.objs or page.commonObjs depending on the PDF.
+      type ImgObj = { width: number; height: number; data: Uint8ClampedArray; kind: number };
+      const getObj = (store: { get(n: string, cb: (v: unknown) => void): void }, n: string) =>
+        new Promise<unknown>((res, rej) => { try { store.get(n, res); } catch { rej(null); } });
+
+      let imgObj: ImgObj | null = null;
+      try { imgObj = await getObj(page.objs, name) as ImgObj; }
+      catch { try { imgObj = await getObj(page.commonObjs, name) as ImgObj; } catch { continue; } }
+      if (!imgObj?.width || !imgObj?.height || !imgObj.data) continue;
+
+      const { width, height, data, kind } = imgObj;
+      if (width < 40 || height < 40) continue;       // ignore tiny icons
+      const ratio = width / height;
+      if (ratio < 0.35 || ratio > 2.2) continue;     // skip banners / narrow strips
+
+      // Convert pdfjs image data (RGB_24BPP=2 or RGBA_32BPP=3) to canvas.
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      const imgData = ctx.createImageData(width, height);
+      if (kind === 3) {
+        // RGBA — copy directly.
+        imgData.data.set(data.slice(0, width * height * 4));
+      } else if (kind === 2) {
+        // RGB — expand to RGBA.
+        for (let px = 0; px < width * height; px++) {
+          imgData.data[px * 4]     = data[px * 3];
+          imgData.data[px * 4 + 1] = data[px * 3 + 1];
+          imgData.data[px * 4 + 2] = data[px * 3 + 2];
+          imgData.data[px * 4 + 3] = 255;
+        }
+      } else continue; // skip grayscale/bitmask — unlikely to be a photo
+      ctx.putImageData(imgData, 0, 0);
+      candidates.push({ url: canvas.toDataURL("image/jpeg", 0.82), area: width * height });
+    }
+
+    // Largest qualifying image is the most likely headshot.
+    candidates.sort((a, b) => b.area - a.area);
+    return candidates[0]?.url ?? "";
+  } catch { return ""; }
 }
 
 export default function Converter() {
   const [data, setData] = useState<ResumeData | null>(null);
+  const [photoUrl, setPhotoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function show(d: ResumeData) {
+  function show(d: ResumeData, photo = "") {
     setData(d);
+    setPhotoUrl(photo);
     setError("");
     requestAnimationFrame(() =>
       document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -70,7 +140,7 @@ export default function Converter() {
     setLoading(true);
     track("tool_started");
     try {
-      const lines = await extractPdfLines(f);
+      const { lines, photoUrl: photo } = await extractPdf(f);
       const parsed = parseResume(lines);
       if (parsed.empty) {
         setData(null);
@@ -79,8 +149,8 @@ export default function Converter() {
         );
         track("tool_completed", { ok: false, reason: "no_text" });
       } else {
-        show(parsed);
-        track("tool_completed", { ok: true, sections: parsed.sections.length });
+        show(parsed, photo);
+        track("tool_completed", { ok: true, sections: parsed.sections.length, hasPhoto: !!photo });
       }
     } catch {
       setData(null);
@@ -143,7 +213,7 @@ export default function Converter() {
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
               <span className={styles.url}>vibe.resume/{slug(data.name)}</span>
             </div>
-            <ResumeSite data={data} />
+            <ResumeSite data={data} photoUrl={photoUrl} />
           </div>
 
           {/* evident primary action */}
@@ -167,11 +237,14 @@ export default function Converter() {
 }
 
 /** The generated personal website — a single polished, responsive template. */
-function ResumeSite({ data }: { data: ResumeData }) {
+function ResumeSite({ data, photoUrl }: { data: ResumeData; photoUrl: string }) {
   return (
     <article className={styles.site}>
       <header className={styles.siteHero}>
-        <div className={styles.avatar} aria-hidden>{initials(data.name)}</div>
+        {photoUrl
+          ? <img src={photoUrl} alt={data.name} className={styles.avatarPhoto} />
+          : <div className={styles.avatar} aria-hidden>{initials(data.name)}</div>
+        }
         <div>
           <h1 className={styles.siteName}>{data.name}</h1>
           {data.title && <p className={styles.siteRole}>{data.title}</p>}
