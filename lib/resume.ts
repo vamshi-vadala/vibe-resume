@@ -136,10 +136,44 @@ function rowsToLines(items: PositionedItem[]): TextLine[] {
   const lines: TextLine[] = [];
   for (const row of rows) {
     const cells = row.sort((a, b) => a.x - b.x);
-    const text = cells.map((c) => c.str).join(" ").replace(/\s{2,}/g, " ").trim();
+    let text = cells.map((c) => c.str).join(" ").replace(/\s{2,}/g, " ").trim();
+    // Some templates letter-space whole lines ("J A N U A R Y 2 0 2 0"); collapse
+    // the per-glyph spacing back into readable words where possible.
+    if (isLetterSpaced(text)) text = deLetterSpace(text);
     if (text) lines.push({ text, size: Math.max(...cells.map((c) => c.size)) });
   }
   return lines;
+}
+
+/** A line is letter-spaced when most whitespace-separated tokens are single chars. */
+function isLetterSpaced(text: string): boolean {
+  const toks = text.split(/\s+/);
+  if (toks.length < 6) return false;
+  const singles = toks.filter((t) => t.length === 1).length;
+  return singles / toks.length >= 0.6;
+}
+
+/**
+ * Collapse uniform per-glyph spacing back into words. The word boundary between
+ * two all-letter words is lost when the template uses equal advances (so
+ * "T R A V E L  A G E N T" can only become "TRAVELAGENT"), but boundaries at
+ * digit↔letter transitions and around dashes survive — which recovers the
+ * common case: letter-spaced date ranges in experience entries.
+ */
+function deLetterSpace(text: string): string {
+  const merged: string[] = [];
+  let buf = "";
+  for (const tok of text.split(" ")) {
+    if (tok.length === 1) buf += tok;
+    else { if (buf) { merged.push(buf); buf = ""; } merged.push(tok); }
+  }
+  if (buf) merged.push(buf);
+  return merged.join(" ")
+    .replace(/([A-Za-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([A-Za-z])/g, "$1 $2")
+    .replace(/\s*([—–])\s*/g, " $1 ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 /**
@@ -221,7 +255,8 @@ export function parseResume(input: string | TextLine[]): ResumeData {
     for (let i = nameIdx + 1; i < Math.min(lines.length, nameIdx + 4); i++) {
       const t = lines[i].text;
       if (isContact(t) || matchSection(t) || SIDEBAR_LABEL.test(t)) continue;
-      if (/\d/.test(t)) continue; // job titles don't contain digits (skips addresses/dates)
+      if (/\d/.test(t)) continue;       // job titles don't contain digits (skips addresses/dates)
+      if (/[A-Z]{9,}/.test(t)) continue; // run-on from collapsed letter-spacing ("TRAVELAGENT")
       if (t.split(/\s+/).length <= 8 && t.length <= 60) { title = t; break; }
     }
   }
