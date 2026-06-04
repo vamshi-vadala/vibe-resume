@@ -10,6 +10,9 @@ export interface Repo {
   description?: string | null;
   stars?: number;
   language?: string | null;
+  homepage?: string | null;   // live-demo URL, when set
+  topics?: string[];          // GitHub repo topics
+  thumbnail?: string;         // GitHub social-preview image URL
 }
 
 /** The subset of GitHub's `/users/:u/repos` response we use. */
@@ -21,7 +24,30 @@ export interface GitHubApiRepo {
   language: string | null;
   fork: boolean;
   archived?: boolean;
+  homepage?: string | null;
+  topics?: string[];
+  pushed_at?: string;
   owner: { login: string };
+}
+
+/** GitHub auto-generates a social-preview card image for every repo. */
+export function repoThumbnail(owner: string, name: string): string {
+  return `https://opengraph.githubassets.com/1/${owner}/${name}`;
+}
+
+/** Map a GitHub API repo to the view-model `Repo`. */
+export function toRepo(r: GitHubApiRepo): Repo {
+  return {
+    owner: r.owner.login,
+    name: r.name,
+    url: r.html_url,
+    description: r.description,
+    stars: r.stargazers_count,
+    language: r.language,
+    homepage: r.homepage && r.homepage.trim() ? r.homepage.trim() : null,
+    topics: r.topics ?? [],
+    thumbnail: repoThumbnail(r.owner.login, r.name),
+  };
 }
 
 /** Extract the GitHub username from a profile URL like https://github.com/jane. */
@@ -53,14 +79,7 @@ export function topReposFromApi(apiRepos: GitHubApiRepo[], limit = 6): Repo[] {
     .filter((r) => !r.fork && !r.archived)
     .sort((a, b) => b.stargazers_count - a.stargazers_count || a.name.localeCompare(b.name))
     .slice(0, limit)
-    .map((r) => ({
-      owner: r.owner.login,
-      name: r.name,
-      url: r.html_url,
-      description: r.description,
-      stars: r.stargazers_count,
-      language: r.language,
-    }));
+    .map(toRepo);
 }
 
 /** Merge two repo lists, de-duping by owner/name (first list wins), capped. */

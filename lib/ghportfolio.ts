@@ -1,8 +1,8 @@
 // Pure logic for the GitHub → Portfolio tool. No DOM/React/network deps.
-// Shapes GitHub's user + repos API responses into a portfolio view model.
+// Shapes GitHub's user + repos (+ profile README) into a portfolio view model.
 // The fetching (and its error handling) lives in the client component.
 
-import { topReposFromApi, type GitHubApiRepo, type Repo } from "./github.ts";
+import { toRepo, type GitHubApiRepo, type Repo } from "./github.ts";
 
 /** The subset of GitHub's `/users/:username` response we use. */
 export interface GitHubApiUser {
@@ -28,15 +28,18 @@ export interface GhLink {
 export interface GhProfile {
   username: string;
   name: string;          // display name, falls back to the handle
-  bio: string;
+  headline: string;      // bio, or one generated from the top languages
+  about: string;         // intro prose pulled from the profile README (may be "")
   avatarUrl: string;
   githubUrl: string;
   company: string | null;
   location: string | null;
   followers: number;
+  publicRepos: number;
+  topLanguages: string[];
   links: GhLink[];       // blog/website + twitter
   stack: string[];       // languages aggregated across repos, most-used first
-  repos: Repo[];         // top repos by stars
+  repos: Repo[];         // top repos, ranked for a portfolio
   empty: boolean;        // true when the user has nothing portfolio-worthy
 }
 
@@ -57,8 +60,89 @@ export function stackFromRepos(repos: GitHubApiRepo[], limit = 12): string[] {
     .map(([lang]) => lang);
 }
 
-/** Build the portfolio view model from a GitHub user and their repos. */
-export function buildGhProfile(user: GitHubApiUser, apiRepos: GitHubApiRepo[]): GhProfile {
+/**
+ * A "portfolio-worthiness" score. Stars matter most (log-scaled so a handful
+ * still counts), but real-project signals — a description, a live homepage,
+ * topics, and recent activity — let a polished 0-star project beat a stale,
+ * blank one. This is what makes the *best* work lead for a typical account.
+ */
+export function repoScore(r: GitHubApiRepo, now: number = Date.now()): number {
+  let score = Math.log2(r.stargazers_count + 1) * 3;
+  if (r.description && r.description.trim()) score += 2;
+  if (r.homepage && r.homepage.trim()) score += 2;
+  if (r.topics && r.topics.length) score += 1.5;
+  if (r.pushed_at) {
+    const months = (now - Date.parse(r.pushed_at)) / (1000 * 60 * 60 * 24 * 30);
+    if (months < 6) score += 1.5;
+    else if (months < 18) score += 0.5;
+  }
+  return score;
+}
+
+/** Rank a user's repos for a portfolio: drop forks/archived, best work first. */
+export function rankReposForPortfolio(apiRepos: GitHubApiRepo[], limit = 6, now?: number): Repo[] {
+  return apiRepos
+    .filter((r) => !r.fork && !r.archived)
+    .map((r) => ({ r, s: repoScore(r, now) }))
+    .sort((a, b) => b.s - a.s || a.r.name.localeCompare(b.r.name))
+    .slice(0, limit)
+    .map(({ r }) => toRepo(r));
+}
+
+/** Build a one-line headline from the top languages, when there's no bio. */
+export function headlineFromLanguages(langs: string[]): string {
+  if (langs.length === 0) return "Software developer";
+  const top = langs.slice(0, 2).join(" & ");
+  return `${top} developer`;
+}
+
+/**
+ * Pull an intro out of a profile README. Real READMEs are noisy (badges,
+ * images, HTML, headings, tables), so we strip all of that and return the
+ * first couple of prose sentences as plain text — a safe, readable "About".
+ */
+export function extractReadmeIntro(markdown: string | null | undefined, maxLen = 320): string {
+  if (!markdown) return "";
+  const lines = markdown.replace(/\r/g, "").split("\n");
+  const prose: string[] = [];
+  let inFence = false;
+  let inHtml = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^```/.test(line)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+    // Skip HTML blocks (e.g. <p align="center">…</p>, <img>, <div>).
+    if (/^<\/?(p|div|table|h\d|picture|a|center|br|hr)\b/i.test(line)) { inHtml = /<(p|div|table|center|picture)\b/i.test(line) && !/\/>/.test(line); continue; }
+    if (inHtml) { if (/<\/(p|div|table|center|picture)>/i.test(line)) inHtml = false; continue; }
+    if (!line) { if (prose.length) break; else continue; } // blank ends the first paragraph
+    if (/^#{1,6}\s/.test(line)) continue;          // headings
+    if (/^[-*+>]\s/.test(line)) continue;          // list items / quotes
+    if (/^\|/.test(line)) continue;                // table rows
+    if (/^!\[/.test(line)) continue;               // standalone images
+    // A line that is only badges/links/images is not prose.
+    const stripped = line.replace(/!?\[[^\]]*\]\([^)]*\)/g, "").replace(/<[^>]+>/g, "").trim();
+    if (!stripped || /^[#>*\-=_|]+$/.test(stripped)) continue;
+    prose.push(line);
+  }
+  let text = prose.join(" ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")          // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")        // links → their text
+    .replace(/<[^>]+>/g, "")                         // inline HTML
+    .replace(/[*_`~]/g, "")                          // emphasis/code marks
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length > maxLen) {
+    text = text.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  }
+  return text;
+}
+
+/** Build the portfolio view model from a GitHub user, their repos, and README. */
+export function buildGhProfile(
+  user: GitHubApiUser,
+  apiRepos: GitHubApiRepo[],
+  readme?: string | null,
+): GhProfile {
   const links: GhLink[] = [];
   if (user.blog && user.blog.trim()) {
     links.push({ kind: "website", label: user.blog.replace(/^https?:\/\//i, ""), url: absolute(user.blog.trim()) });
@@ -67,21 +151,26 @@ export function buildGhProfile(user: GitHubApiUser, apiRepos: GitHubApiRepo[]): 
     links.push({ kind: "twitter", label: `@${user.twitter_username}`, url: `https://twitter.com/${user.twitter_username}` });
   }
 
-  const repos = topReposFromApi(apiRepos, 6);
-  const stack = stackFromRepos(apiRepos);
+  const topLanguages = stackFromRepos(apiRepos);
+  const repos = rankReposForPortfolio(apiRepos);
+  const bio = user.bio?.trim() || "";
+  const about = extractReadmeIntro(readme);
 
   return {
     username: user.login,
     name: user.name?.trim() || user.login,
-    bio: user.bio?.trim() || "",
+    headline: bio || headlineFromLanguages(topLanguages),
+    about,
     avatarUrl: user.avatar_url,
     githubUrl: user.html_url || `https://github.com/${user.login}`,
     company: user.company?.trim() || null,
     location: user.location?.trim() || null,
     followers: user.followers ?? 0,
+    publicRepos: user.public_repos ?? 0,
+    topLanguages,
     links,
-    stack,
+    stack: topLanguages,
     repos,
-    empty: repos.length === 0 && stack.length === 0 && !user.bio && !user.name,
+    empty: repos.length === 0 && topLanguages.length === 0 && !bio && !about && !user.name,
   };
 }

@@ -41,11 +41,12 @@
 
 /* the generated portfolio */
 .site { padding: 32px clamp(20px, 5vw, 44px) 40px; color: var(--text); }
-.siteHero { display: flex; gap: 20px; align-items: flex-start; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-.avatar { flex: 0 0 auto; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); }
-.siteName { font-size: 28px; line-height: 1.1; margin: 0; }
-.siteBio { font-size: 16px; line-height: 1.55; margin: 8px 0 0; max-width: 64ch; }
-.siteMeta { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+.siteHero { display: flex; gap: 22px; align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.avatar { flex: 0 0 auto; width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); }
+.heroBody { min-width: 0; }
+.siteName { font-size: 30px; line-height: 1.1; margin: 0; }
+.headline { font-size: 17px; line-height: 1.5; margin: 6px 0 0; color: var(--accent); font-weight: 600; }
+.stats { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
 
 .linkRow { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
 .link {
@@ -58,6 +59,7 @@
 .siteSection { padding: 22px 0; border-bottom: 1px solid var(--line); }
 .siteSection:last-child { border-bottom: 0; padding-bottom: 0; }
 .siteH2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+.about { font-size: 15.5px; line-height: 1.65; margin: 0; max-width: 68ch; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -65,19 +67,40 @@
   background: var(--panel2); border: 1px solid var(--line); color: var(--text);
 }
 
-.repos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.repos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .repoCard {
-  display: block; text-decoration: none; color: var(--text);
-  background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color .15s ease;
 }
 .repoCard:hover { border-color: var(--accent); }
-.repoName { font-weight: 700; font-size: 15px; }
-.repoDesc { color: var(--text); font-size: 13.5px; line-height: 1.45; margin-top: 5px; }
-.repoMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.repoThumb {
+  width: 100%; aspect-ratio: 2 / 1; object-fit: cover;
+  background: var(--panel); border-bottom: 1px solid var(--line); display: block;
+}
+.repoBody { padding: 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.repoName { font-weight: 700; font-size: 15.5px; color: var(--text); text-decoration: none; }
+.repoName:hover { color: var(--accent); }
+.repoDesc { color: var(--text); font-size: 13.5px; line-height: 1.5; margin: 0; }
+.topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic {
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+}
+.repoMeta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  margin-top: auto; padding-top: 4px; color: var(--muted); font-size: 12.5px;
+}
+.repoLinks { display: inline-flex; gap: 12px; margin-left: auto; }
+.repoLinks a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.repoLinks a:hover { text-decoration: underline; }
 
 @media (max-width: 560px) {
   .siteHero { flex-direction: column; align-items: center; text-align: center; }
-  .siteName { font-size: 24px; }
+  .siteName { font-size: 25px; }
+  .repoLinks { margin-left: 0; }
 }
 
 .cta {
