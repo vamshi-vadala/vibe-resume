@@ -37,6 +37,7 @@ export interface DevProfile {
   headline: string;     // job title, e.g. "Senior Software Engineer"
   summary: string;
   githubUrl: string | null;
+  profiles: string[];   // all GitHub handles found — repos are pulled from each
   links: DevLink[];
   repos: DevRepo[];
   projects: string[];   // prose project lines (a "Projects" section without repo links)
@@ -111,9 +112,19 @@ export function detectStack(text: string): string[] {
 
 const GITHUB_PATH = /github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})?)(?:\/([A-Za-z0-9._-]+))?/gi;
 
-/** Pull the GitHub profile URL (if any) and any owner/repo links out of the text. */
-export function detectGitHub(text: string): { githubUrl: string | null; repos: DevRepo[] } {
-  let githubUrl: string | null = null;
+/**
+ * Pull GitHub signals out of the text: every distinct *profile* handle
+ * (`github.com/<user>` with no repo) and every `owner/repo` link. All bare
+ * profiles in a personal resume are the candidate's, so we keep them all to
+ * pull repos from each. `githubUrl` is the first profile (used for the hero).
+ */
+export function detectGitHub(text: string): {
+  githubUrl: string | null;
+  profiles: string[];
+  repos: DevRepo[];
+} {
+  const profiles: string[] = [];
+  const profileSeen = new Set<string>();
   const repos: DevRepo[] = [];
   const seen = new Set<string>();
   for (const m of text.matchAll(GITHUB_PATH)) {
@@ -125,13 +136,18 @@ export function detectGitHub(text: string): { githubUrl: string | null; repos: D
         seen.add(key);
         repos.push({ owner, name: repo, url: `https://github.com/${owner}/${repo}` });
       }
-    } else if (!githubUrl) {
-      githubUrl = `https://github.com/${owner}`;
+    } else {
+      const key = owner.toLowerCase();
+      if (!profileSeen.has(key)) {
+        profileSeen.add(key);
+        profiles.push(owner);
+      }
     }
   }
-  // A repo owner also implies the profile, if no bare profile link was present.
-  if (!githubUrl && repos.length) githubUrl = `https://github.com/${repos[0].owner}`;
-  return { githubUrl, repos };
+  // No bare profile link? A repo owner implies the profile.
+  if (profiles.length === 0 && repos.length) profiles.push(repos[0].owner);
+  const githubUrl = profiles.length ? `https://github.com/${profiles[0]}` : null;
+  return { githubUrl, profiles, repos };
 }
 
 /** Extract the GitHub username from a profile URL like https://github.com/jane. */
@@ -210,7 +226,7 @@ export function detectLinks(text: string): DevLink[] {
 export function analyzeDevResume(input: string): DevProfile {
   const base = parseResume(input);
   const text = input;
-  const { githubUrl, repos } = detectGitHub(text);
+  const { githubUrl, profiles, repos } = detectGitHub(text);
   const links = detectLinks(text);
   const stack = detectStack(text);
 
@@ -229,6 +245,7 @@ export function analyzeDevResume(input: string): DevProfile {
     headline: base.title,
     summary: base.summary,
     githubUrl,
+    profiles,
     links,
     repos,
     projects,

@@ -61,9 +61,18 @@ test("infers the profile from a repo owner when no bare profile link exists", ()
 });
 
 test("no GitHub anywhere yields null profile and empty repos", () => {
-  const { githubUrl, repos } = detectGitHub("no links here, just text");
+  const { githubUrl, profiles, repos } = detectGitHub("no links here, just text");
   assert.equal(githubUrl, null);
+  assert.equal(profiles.length, 0);
   assert.equal(repos.length, 0);
+});
+
+test("collects every distinct GitHub profile, not just the first", () => {
+  const { githubUrl, profiles } = detectGitHub(
+    "github.com/alexrivera and github.com/vamshi-vadala/ plus github.com/alexrivera/portfolio"
+  );
+  assert.deepEqual(profiles, ["alexrivera", "vamshi-vadala"], "both profiles, de-duped");
+  assert.equal(githubUrl, "https://github.com/alexrivera", "first is the hero profile");
 });
 
 // ---- detectLinks ---------------------------------------------------------
@@ -111,6 +120,7 @@ test("the built-in sample produces a complete profile", () => {
   assert.equal(p.name, "Alex Rivera");
   assert.equal(p.headline, "Senior Software Engineer");
   assert.equal(p.githubUrl, "https://github.com/alexrivera");
+  assert.deepEqual(p.profiles, ["alexrivera"]);
   assert.ok(p.stack.includes("TypeScript") && p.stack.includes("Go") && p.stack.includes("Kubernetes"));
   assert.equal(p.repos.length, 2);
   assert.ok(p.repos.some((r) => r.name === "ratelimit-go"));

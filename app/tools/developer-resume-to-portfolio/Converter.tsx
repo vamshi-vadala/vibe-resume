@@ -77,13 +77,19 @@ export default function Converter() {
     setError("");
     setData(profile);
     setLiveRepos([]);
-    // Deliver "repos pulled out automatically": if a GitHub profile is present,
-    // fetch the real repos and fold them in. Fire-and-forget — the preview shows
-    // immediately and never blocks on the network.
-    const user = usernameFromGitHubUrl(profile.githubUrl);
-    if (user) {
-      fetchUserRepos(user).then((repos) => {
-        if (repos && repos.length) setLiveRepos(repos);
+    // Deliver "repos pulled out automatically": fetch real repos for every GitHub
+    // profile found in the resume (capped), and fold them in. Fire-and-forget —
+    // the preview shows immediately and never blocks on the network.
+    const handles = (profile.profiles.length ? profile.profiles : [usernameFromGitHubUrl(profile.githubUrl)])
+      .filter((h): h is string => !!h)
+      .slice(0, 3);
+    if (handles.length) {
+      Promise.all(handles.map(fetchUserRepos)).then((results) => {
+        const merged = results
+          .filter((r): r is DevRepo[] => !!r)
+          .flat()
+          .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0));
+        if (merged.length) setLiveRepos(mergeRepos(merged, [], 8));
       });
     }
     track("tool_completed", { stack: profile.stack.length, repos: profile.repos.length });
