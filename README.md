@@ -2,7 +2,7 @@
 
 A suite of free, SEO-driven micro-tools that turn resumes and profiles into shareable web pages — each tool an indexed landing page that funnels to the Vibe Resume product.
 
-This repo is the implementation of that programmatic-SEO plan. **Three tools are built so far**, plus an email waitlist with a real backend and the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) the rest of the cluster reuses.
+This repo is the implementation of that programmatic-SEO plan. **Four tools are built so far**, plus an email waitlist with a real backend and the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) the rest of the cluster reuses.
 
 ## Built so far
 
@@ -58,6 +58,24 @@ Paste a developer resume and flip it into a portfolio: GitHub, project repos and
   **Experience**, and a **Projects** section (live + resume-listed repos).
 - **Result-gated CTA + tracking** — same funnel, stamped `tool_slug: "developer-resume-to-portfolio"`.
 
+### GitHub → Portfolio — `/tools/github-to-portfolio`
+
+One field — a GitHub username — and out comes a portfolio, pulled straight from GitHub.
+
+- **Single-field input** — enter a username (or `@handle`, or a profile URL);
+  `normalizeUsername` in `lib/github.ts` validates it against GitHub's handle rules.
+- **Live profile + repos** — the client fetches `/users/:u` and `/users/:u/repos` from the
+  public GitHub API (no auth, no token), with clear handling for *not found* (404),
+  *rate-limited* (403) and network errors, bounded by an 8s `AbortController`.
+- **Portfolio view model** — `lib/ghportfolio.ts` (pure, tested) shapes the responses into
+  `{ name, bio, avatar, links, stack, repos }`: top repos by stars (forks/archived dropped)
+  and a tech stack aggregated from repo languages, most-used first.
+- **Result-gated CTA + tracking** — same funnel, stamped `tool_slug: "github-to-portfolio"`.
+
+> Shared GitHub concerns (API types, repo ranking, username parsing) live in `lib/github.ts`,
+> consumed by both this tool and Developer Resume → Portfolio — neither feature module depends
+> on the other.
+
 ### Email waitlist — `/signup` + `/api/waitlist`
 
 Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcoming publish-your-resume feature.
@@ -103,19 +121,26 @@ app/
     page.tsx Converter.tsx converter.module.css opengraph-image.tsx
   tools/developer-resume-to-portfolio/
     page.tsx Converter.tsx converter.module.css opengraph-image.tsx
+  tools/github-to-portfolio/
+    page.tsx Converter.tsx converter.module.css opengraph-image.tsx
 lib/
   ats.ts                              # pure ATS analysis logic
   resume.ts                           # pure resume text → structured website data
+  github.ts                           # shared GitHub primitives (types, repo ranking, handle parsing)
   devresume.ts                        # pure dev-resume → portfolio logic (stack, GitHub, links)
+  ghportfolio.ts                      # pure GitHub user+repos → portfolio view model
 public/
   pdf.worker.min.mjs                  # self-hosted pdf.js worker (see note below)
 test/
   resume.unit.test.ts                 # resume parser unit + (CI-skipped) sample regressions
+  github.unit.test.ts                 # shared GitHub primitives
   devresume.unit.test.ts              # dev-resume logic unit tests
+  ghportfolio.unit.test.ts            # github → portfolio view model
 e2e/
   theme.spec.ts                       # ATS: computed-style + axe contrast tests
   pdf-tool.spec.ts                    # PDF→website: computed-style + axe contrast tests
   devresume-tool.spec.ts              # Dev→portfolio: render + axe (stubs the GitHub API)
+  ghportfolio-tool.spec.ts            # GitHub→portfolio: render + error + axe (stubs the API)
 playwright.config.ts                  # runs tests in light & dark schemes
 ```
 
@@ -183,7 +208,6 @@ Server-side only — **never** prefix these with `NEXT_PUBLIC_`. Create a Redis 
 ## Roadmap
 
 Next tools in the cluster (priority order): **ThemeDeck** (portfolio theme picker),
-**GitHub → Portfolio** (username → live repos), Profile URL Slug Generator, AboutMeAI,
-Resume QR, CaseCrafter, Portfolio Handle Checker — all built on the template above with an
-internal-link mesh between them. (PDF Resume → Website, the ATS Converter, and Developer
-Resume → Portfolio are live.)
+Profile URL Slug Generator, AboutMeAI, Resume QR, CaseCrafter, Portfolio Handle Checker —
+all built on the template above with an internal-link mesh between them. (PDF Resume →
+Website, ATS Converter, Developer Resume → Portfolio, and GitHub → Portfolio are live.)

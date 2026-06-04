@@ -3,14 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   analyzeDevResume, detectStack, detectGitHub, detectLinks, SAMPLE_DEV_RESUME,
-  usernameFromGitHubUrl, topReposFromApi, mergeRepos, type GitHubApiRepo, type DevRepo,
 } from "../lib/devresume.ts";
-
-const apiRepo = (over: Partial<GitHubApiRepo>): GitHubApiRepo => ({
-  name: "repo", html_url: "https://github.com/u/repo", description: null,
-  stargazers_count: 0, language: null, fork: false, archived: false,
-  owner: { login: "u" }, ...over,
-});
 
 // ---- detectStack ---------------------------------------------------------
 
@@ -82,34 +75,6 @@ test("collects linkedin and a personal .dev site, ignoring known hosts", () => {
   assert.ok(links.some((l) => l.kind === "linkedin" && l.url === "https://linkedin.com/in/jane-doe"));
   assert.ok(links.some((l) => l.kind === "website" && l.url === "https://jane.dev"));
   assert.ok(!links.some((l) => l.kind === "website" && l.label.includes("github")), "github not treated as website");
-});
-
-// ---- GitHub API repo ranking & merge -------------------------------------
-
-test("usernameFromGitHubUrl extracts the handle", () => {
-  assert.equal(usernameFromGitHubUrl("https://github.com/jane"), "jane");
-  assert.equal(usernameFromGitHubUrl("https://github.com/jane-doe/repo"), "jane-doe");
-  assert.equal(usernameFromGitHubUrl(null), null);
-});
-
-test("topReposFromApi drops forks/archived and ranks by stars", () => {
-  const repos = topReposFromApi([
-    apiRepo({ name: "popular", stargazers_count: 120, language: "Go" }),
-    apiRepo({ name: "aFork", stargazers_count: 999, fork: true }),
-    apiRepo({ name: "old", stargazers_count: 5, archived: true }),
-    apiRepo({ name: "mid", stargazers_count: 30 }),
-  ], 6);
-  assert.deepEqual(repos.map((r) => r.name), ["popular", "mid"]);
-  assert.equal(repos[0].stars, 120);
-  assert.equal(repos[0].language, "Go");
-});
-
-test("mergeRepos de-dupes by owner/name and caps the count", () => {
-  const a: DevRepo[] = [{ owner: "u", name: "x", url: "1" }, { owner: "u", name: "y", url: "2" }];
-  const b: DevRepo[] = [{ owner: "U", name: "X", url: "dup" }, { owner: "u", name: "z", url: "3" }];
-  const merged = mergeRepos(a, b, 6);
-  assert.deepEqual(merged.map((r) => r.name), ["x", "y", "z"]);
-  assert.equal(mergeRepos(a, b, 2).length, 2, "respects the cap");
 });
 
 // ---- analyzeDevResume (integration) --------------------------------------

@@ -4,6 +4,7 @@
 // project repos, and a detected tech stack. Tolerant by design — never throws.
 
 import { parseResume, type ExperienceEntry } from "./resume.ts";
+import type { Repo } from "./github.ts";
 
 export type LinkKind = "github" | "linkedin" | "website" | "stackoverflow" | "twitter" | "gitlab" | "devpost";
 
@@ -12,26 +13,6 @@ export interface DevLink {
   label: string; // human label, e.g. "github.com/jane"
   url: string;   // absolute https URL
 }
-export interface DevRepo {
-  owner: string;
-  name: string;
-  url: string;
-  description?: string | null;
-  stars?: number;
-  language?: string | null;
-}
-
-/** The subset of GitHub's /users/:u/repos response we use. */
-export interface GitHubApiRepo {
-  name: string;
-  html_url: string;
-  description: string | null;
-  stargazers_count: number;
-  language: string | null;
-  fork: boolean;
-  archived?: boolean;
-  owner: { login: string };
-}
 export interface DevProfile {
   name: string;
   headline: string;     // job title, e.g. "Senior Software Engineer"
@@ -39,7 +20,7 @@ export interface DevProfile {
   githubUrl: string | null;
   profiles: string[];   // all GitHub handles found — repos are pulled from each
   links: DevLink[];
-  repos: DevRepo[];
+  repos: Repo[];
   projects: string[];   // prose project lines (a "Projects" section without repo links)
   experience: ExperienceEntry[]; // per-role work history (header / date / bullets)
   stack: string[];      // canonical-cased tech keywords found in the text
@@ -121,11 +102,11 @@ const GITHUB_PATH = /github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})?)(?:\/([A-Z
 export function detectGitHub(text: string): {
   githubUrl: string | null;
   profiles: string[];
-  repos: DevRepo[];
+  repos: Repo[];
 } {
   const profiles: string[] = [];
   const profileSeen = new Set<string>();
-  const repos: DevRepo[] = [];
+  const repos: Repo[] = [];
   const seen = new Set<string>();
   for (const m of text.matchAll(GITHUB_PATH)) {
     const owner = m[1];
@@ -148,46 +129,6 @@ export function detectGitHub(text: string): {
   if (profiles.length === 0 && repos.length) profiles.push(repos[0].owner);
   const githubUrl = profiles.length ? `https://github.com/${profiles[0]}` : null;
   return { githubUrl, profiles, repos };
-}
-
-/** Extract the GitHub username from a profile URL like https://github.com/jane. */
-export function usernameFromGitHubUrl(url: string | null): string | null {
-  if (!url) return null;
-  const m = url.match(/github\.com\/([A-Za-z0-9-]+)/i);
-  return m ? m[1] : null;
-}
-
-/**
- * Rank a user's GitHub repos for a portfolio: drop forks and archived repos,
- * then sort by stars (desc), breaking ties by name for determinism.
- */
-export function topReposFromApi(apiRepos: GitHubApiRepo[], limit = 6): DevRepo[] {
-  return apiRepos
-    .filter((r) => !r.fork && !r.archived)
-    .sort((a, b) => b.stargazers_count - a.stargazers_count || a.name.localeCompare(b.name))
-    .slice(0, limit)
-    .map((r) => ({
-      owner: r.owner.login,
-      name: r.name,
-      url: r.html_url,
-      description: r.description,
-      stars: r.stargazers_count,
-      language: r.language,
-    }));
-}
-
-/** Merge two repo lists, de-duping by owner/name (first list wins), capped. */
-export function mergeRepos(primary: DevRepo[], extra: DevRepo[], limit = 6): DevRepo[] {
-  const out: DevRepo[] = [];
-  const seen = new Set<string>();
-  for (const r of [...primary, ...extra]) {
-    const key = `${r.owner}/${r.name}`.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(r);
-    if (out.length >= limit) break;
-  }
-  return out;
 }
 
 const LINK_PATTERNS: Array<{ kind: LinkKind; re: RegExp }> = [

@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import posthog from "posthog-js";
-import {
-  analyzeDevResume, SAMPLE_DEV_RESUME, usernameFromGitHubUrl, topReposFromApi, mergeRepos,
-  type DevProfile, type DevRepo,
-} from "@/lib/devresume.ts";
+import { analyzeDevResume, SAMPLE_DEV_RESUME, type DevProfile } from "@/lib/devresume.ts";
+import { usernameFromGitHubUrl, topReposFromApi, mergeRepos, type Repo } from "@/lib/github.ts";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "developer-resume-to-portfolio";
@@ -30,7 +28,7 @@ function slug(name: string) {
 }
 
 /** Fetch a user's public repos from GitHub (client-side → visitor's own rate limit). */
-async function fetchUserRepos(username: string): Promise<DevRepo[] | null> {
+async function fetchUserRepos(username: string): Promise<Repo[] | null> {
   // Bound the wait — on a slow/blocked network we fall back rather than hang.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 5000);
@@ -50,8 +48,8 @@ async function fetchUserRepos(username: string): Promise<DevRepo[] | null> {
 }
 
 /** Resume-listed repos first (the candidate's pick), enriched from the live data. */
-function combineRepos(textRepos: DevRepo[], liveRepos: DevRepo[]): DevRepo[] {
-  const key = (r: DevRepo) => `${r.owner}/${r.name}`.toLowerCase();
+function combineRepos(textRepos: Repo[], liveRepos: Repo[]): Repo[] {
+  const key = (r: Repo) => `${r.owner}/${r.name}`.toLowerCase();
   const live = new Map(liveRepos.map((r) => [key(r), r]));
   const chosen = textRepos.map((t) => live.get(key(t)) ?? t); // enrich if GitHub knows it
   const chosenKeys = new Set(textRepos.map(key));
@@ -62,7 +60,7 @@ function combineRepos(textRepos: DevRepo[], liveRepos: DevRepo[]): DevRepo[] {
 export default function Converter() {
   const [src, setSrc] = useState("");
   const [data, setData] = useState<DevProfile | null>(null);
-  const [liveRepos, setLiveRepos] = useState<DevRepo[]>([]);
+  const [liveRepos, setLiveRepos] = useState<Repo[]>([]);
   const [error, setError] = useState("");
 
   function run(text: string) {
@@ -86,7 +84,7 @@ export default function Converter() {
     if (handles.length) {
       Promise.all(handles.map(fetchUserRepos)).then((results) => {
         const merged = results
-          .filter((r): r is DevRepo[] => !!r)
+          .filter((r): r is Repo[] => !!r)
           .flat()
           .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0));
         if (merged.length) setLiveRepos(mergeRepos(merged, [], 8));
@@ -167,7 +165,7 @@ const LINK_LABEL: Record<string, string> = {
 };
 
 /** The generated developer portfolio — a single polished, responsive template. */
-function Portfolio({ data, repos }: { data: DevProfile; repos: DevRepo[] }) {
+function Portfolio({ data, repos }: { data: DevProfile; repos: Repo[] }) {
   const allLinks = [
     ...(data.githubUrl ? [{ kind: "github", label: data.githubUrl.replace(/^https?:\/\//, ""), url: data.githubUrl }] : []),
     ...data.links,

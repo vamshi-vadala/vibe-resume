@@ -25,10 +25,15 @@ const LIVE = [
     name: "Developer Resume → Portfolio",
     desc: "Flip a dev resume into a portfolio — your GitHub, projects and tech stack, auto-detected.",
   },
+  {
+    href: "/tools/github-to-portfolio",
+    name: "GitHub → Portfolio",
+    desc: "One field: a GitHub username. Out comes a portfolio — bio, top repos and tech stack.",
+  },
 ];
 
 const SOON = [
-  { name: "GitHub → Portfolio", desc: "Generate a portfolio from just your GitHub username." },
+  { name: "ThemeDeck", desc: "Swipe through portfolio themes to find your look." },
 ];
 
 export default function Home() {
