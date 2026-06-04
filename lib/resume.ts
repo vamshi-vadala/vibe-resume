@@ -398,7 +398,9 @@ function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
       continue;
     }
     if (!current) continue;              // stray line before any heading
-    if (isContact(line.text)) continue;  // keep contact noise out of sections
+    // Drop contact noise — but a numeric date range ("2016 - 2020") trips the
+    // phone pattern, and it's a real experience signal, so never filter those.
+    if (isContact(line.text) && !isDateLine(line.text)) continue;
     const bullet = BULLET_LEAD.test(line.text);
     const item = line.text.replace(BULLET_LEAD, "").trim();
     if (item && item !== name) current.items.push({ text: item, bullet });

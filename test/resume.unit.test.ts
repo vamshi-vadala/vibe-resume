@@ -211,6 +211,23 @@ test("achievement lines without bullet markers attach to the role, not as new ro
   assert.equal(exp!.entries![1].bullets.length, 1);
 });
 
+test("plain-hyphen numeric date ranges are not dropped as phone numbers", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Experience", 13),
+    L("Staff Engineer, Acme", 11),
+    L("2020 - Present", 10),
+    L("Led the platform team.", 10),
+    L("Senior Engineer, Globex", 11),
+    L("2016 - 2020", 10),          // plain hyphen, all digits — must survive
+    L("Built the pipeline.", 10),
+  ]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.equal(exp!.entries!.length, 2, "both roles kept");
+  assert.equal(exp!.entries![1].header, "Senior Engineer, Globex");
+  assert.equal(exp!.entries![1].meta, "2016 - 2020");
+});
+
 test("only the Experience section gets entries; others stay flat", () => {
   const d = parseResume([
     L("Jane Doe", 20),

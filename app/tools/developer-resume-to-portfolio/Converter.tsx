@@ -148,17 +148,43 @@ function Portfolio({ data }: { data: DevProfile }) {
         </section>
       )}
 
-      {data.repos.length > 0 && (
+      {data.experience.length > 0 && (
+        <section className={styles.siteSection}>
+          <h2 className={styles.siteH2}>Experience</h2>
+          {data.experience.map((e, i) => (
+            <div key={i} className={styles.entry}>
+              <div className={styles.entryHead}>
+                {e.header && <span className={styles.entryTitle}>{e.header}</span>}
+                {e.meta && <span className={styles.entryMeta}>{e.meta}</span>}
+              </div>
+              {e.bullets.length > 0 && (
+                <ul className={styles.entryList}>
+                  {e.bullets.map((b, k) => <li key={k}>{b}</li>)}
+                </ul>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {(data.repos.length > 0 || data.projects.length > 0) && (
         <section className={styles.siteSection}>
           <h2 className={styles.siteH2}>Projects</h2>
-          <div className={styles.repos}>
-            {data.repos.map((r, i) => (
-              <a key={i} className={styles.repoCard} href={r.url} target="_blank" rel="noopener noreferrer">
-                <div className={styles.repoName}>{r.name}</div>
-                <div className={styles.repoOwner}>{r.owner}/{r.name}</div>
-              </a>
-            ))}
-          </div>
+          {data.repos.length > 0 && (
+            <div className={styles.repos}>
+              {data.repos.map((r, i) => (
+                <a key={i} className={styles.repoCard} href={r.url} target="_blank" rel="noopener noreferrer">
+                  <div className={styles.repoName}>{r.name}</div>
+                  <div className={styles.repoOwner}>{r.owner}/{r.name}</div>
+                </a>
+              ))}
+            </div>
+          )}
+          {data.projects.length > 0 && (
+            <ul className={styles.entryList} style={{ marginTop: data.repos.length ? 14 : 0 }}>
+              {data.projects.map((p, i) => <li key={i}>{p}</li>)}
+            </ul>
+          )}
         </section>
       )}
     </article>

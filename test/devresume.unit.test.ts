@@ -81,6 +81,44 @@ test("the built-in sample produces a complete profile", () => {
   assert.ok(p.repos.some((r) => r.name === "ratelimit-go"));
   assert.ok(p.links.some((l) => l.kind === "linkedin"));
   assert.ok(p.links.some((l) => l.kind === "website" && l.label === "alexrivera.dev"));
+  // experience must be carried through, not dropped
+  assert.equal(p.experience.length, 2);
+  assert.equal(p.experience[0].header, "Senior Software Engineer — Stripe");
+  assert.ok(p.experience[0].bullets.length >= 1);
+});
+
+test("work experience and prose projects survive into the profile", () => {
+  const p = analyzeDevResume(
+    `Priya Sharma
+Backend Engineer
+
+Skills
+Java, Spring Boot, Kafka
+
+Experience
+Staff Engineer, Acme Payments
+2020 - Present
+Designed a ledger service.
+Mentored a team of 6.
+
+Senior Engineer, Globex
+2016 - 2020
+Built the notifications platform.
+
+Projects
+Built an open-source rate limiter.
+Created a CLI tool for migrations.
+`
+  );
+  assert.equal(p.experience.length, 2, "both roles kept, incl. the plain-hyphen-dated one");
+  assert.equal(p.experience[1].header, "Senior Engineer, Globex");
+  assert.deepEqual(p.projects, [
+    "Built an open-source rate limiter.",
+    "Created a CLI tool for migrations.",
+  ]);
+  // "Spring Boot" present → redundant "Spring" suppressed
+  assert.ok(p.stack.includes("Spring Boot"));
+  assert.ok(!p.stack.includes("Spring"));
 });
 
 test("blank input is reported empty", () => {

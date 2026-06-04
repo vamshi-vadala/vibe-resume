@@ -33,8 +33,10 @@ test.describe("developer resume→portfolio tool", () => {
     const nameColor = await colorOf(page, "#result h1");
     expect(isTransparent(nameColor), `portfolio name color unresolved: ${nameColor}`).toBe(false);
 
-    // the detected tech stack and project repos must render
+    // the detected tech stack, experience and project repos must render
     await expect(page.locator("#result").getByText("Tech stack")).toBeVisible();
+    await expect(page.locator("#result").getByText("Experience")).toBeVisible();
+    await expect(page.locator("#result").getByText("Senior Software Engineer — Stripe")).toBeVisible();
     await expect(page.locator("#result").getByText("Projects")).toBeVisible();
     await expect(page.locator("#result").getByText("ratelimit-go", { exact: true })).toBeVisible();
 

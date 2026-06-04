@@ -3,7 +3,7 @@
 // developer-specific signals a portfolio leads with: GitHub, profile links,
 // project repos, and a detected tech stack. Tolerant by design — never throws.
 
-import { parseResume } from "./resume.ts";
+import { parseResume, type ExperienceEntry } from "./resume.ts";
 
 export type LinkKind = "github" | "linkedin" | "website" | "stackoverflow" | "twitter" | "gitlab" | "devpost";
 
@@ -24,6 +24,8 @@ export interface DevProfile {
   githubUrl: string | null;
   links: DevLink[];
   repos: DevRepo[];
+  projects: string[];   // prose project lines (a "Projects" section without repo links)
+  experience: ExperienceEntry[]; // per-role work history (header / date / bullets)
   stack: string[];      // canonical-cased tech keywords found in the text
   empty: boolean;
 }
@@ -67,6 +69,13 @@ function esc(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// When the more specific term is present, the broader one is redundant noise.
+const SUBSUMES: Record<string, string> = {
+  "Spring": "Spring Boot",
+  "Tailwind": "Tailwind CSS",
+  "Rails": "Ruby on Rails",
+};
+
 /** Detect tech-stack keywords as whole tokens, returned in dictionary order. */
 export function detectStack(text: string): string[] {
   const found = new Map<string, true>(); // display -> seen
@@ -78,6 +87,9 @@ export function detectStack(text: string): string[] {
   for (const [pattern, display] of CASE_SENSITIVE) {
     const re = new RegExp(`(?<![A-Za-z0-9.+#-])${esc(pattern)}(?![A-Za-z0-9+#-])`);
     if (re.test(text)) found.set(display, true);
+  }
+  for (const [broad, specific] of Object.entries(SUBSUMES)) {
+    if (found.has(broad) && found.has(specific)) found.delete(broad);
   }
   return [...found.keys()].slice(0, 28);
 }
@@ -147,7 +159,15 @@ export function analyzeDevResume(input: string): DevProfile {
   const links = detectLinks(text);
   const stack = detectStack(text);
 
-  const empty = base.empty && !githubUrl && repos.length === 0 && stack.length === 0 && links.length === 0;
+  // Reuse what the base parser already structured: per-role experience and a
+  // prose Projects section. A repo link inside a project line is shown as a
+  // card instead, so drop project lines that are just a bare github URL.
+  const experience = base.sections.find((s) => s.heading === "Experience")?.entries ?? [];
+  const projects = (base.sections.find((s) => s.heading === "Projects")?.items ?? [])
+    .filter((line) => !/^\s*(https?:\/\/)?github\.com\/\S+\s*$/i.test(line));
+
+  const empty =
+    base.empty && !githubUrl && repos.length === 0 && stack.length === 0 && links.length === 0;
 
   return {
     name: base.name,
@@ -156,6 +176,8 @@ export function analyzeDevResume(input: string): DevProfile {
     githubUrl,
     links,
     repos,
+    projects,
+    experience,
     stack,
     empty,
   };
