@@ -3,9 +3,17 @@
 // one-page personal website renders from. Tolerant by design: messy input
 // degrades gracefully, never throws.
 
+/** One role within the Experience section: a header, an optional date range, and bullets. */
+export interface ExperienceEntry {
+  header: string;   // e.g. "Senior Designer, Acme Corp"
+  meta?: string;    // e.g. "Jan 2020 — Present" (date range), when detected
+  bullets: string[];
+}
 export interface ResumeSection {
   heading: string;
   items: string[];
+  /** Present only on the Experience section: items regrouped into per-role entries. */
+  entries?: ExperienceEntry[];
 }
 export interface ResumeData {
   name: string;
@@ -283,6 +291,72 @@ function collectContacts(lines: TextLine[], nameLine: TextLine): string[] {
   )].slice(0, 4);
 }
 
+const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z.]*";
+// A date *range*: "Jan 2020 — Present", "2017 - 2019", "May 2021 to Aug 2022".
+const DATE_RANGE = new RegExp(
+  `(?:${MONTH}\\s+)?(?:19|20)\\d{2}\\s*(?:[-–—]|to)\\s*` +
+    `(?:(?:${MONTH}\\s+)?(?:19|20)\\d{2}|present|current|now|ongoing)`,
+  "i"
+);
+
+/** True when a line is essentially just a date range (≤2 stray words around it). */
+function isDateLine(text: string): boolean {
+  const m = text.match(DATE_RANGE);
+  if (!m) return false;
+  const rest = text.replace(m[0], "").trim();
+  return rest.split(/\s+/).filter(Boolean).length <= 2;
+}
+
+/** Pull an embedded date range out of a header line into its own `meta`. */
+function splitDateFromHeader(text: string): { header: string; meta?: string } {
+  const m = text.match(DATE_RANGE);
+  if (!m) return { header: text };
+  const header = text.replace(m[0], "").replace(/[\s,;|·•()–—-]+$/, "").trim();
+  // If stripping the date leaves nothing, the line *was* the date — keep it as the header.
+  return header ? { header, meta: m[0].trim() } : { header: text };
+}
+
+/**
+ * Regroup flat Experience items (carrying bullet flags) into per-role entries.
+ * Dates are the reliable role boundary — not every resume bullets its lines — so a
+ * new role starts only at a line that carries a date range or is immediately followed
+ * by a date-only line. Everything else becomes a bullet of the current role.
+ */
+function groupExperience(items: Array<{ text: string; bullet: boolean }>): ExperienceEntry[] {
+  const entries: ExperienceEntry[] = [];
+  let current: ExperienceEntry | null = null;
+
+  for (let i = 0; i < items.length; i++) {
+    const { text, bullet } = items[i];
+    if (bullet) {
+      if (!current) current = { header: "", bullets: [] };
+      current.bullets.push(text);
+      continue;
+    }
+    // A bare date line right under its header is that role's date range.
+    if (current && !current.meta && current.bullets.length === 0 && isDateLine(text)) {
+      current.meta = text;
+      continue;
+    }
+    const next = items[i + 1];
+    const startsRole =
+      DATE_RANGE.test(text) || (next && !next.bullet && isDateLine(next.text));
+    if (startsRole) {
+      if (current) entries.push(current);
+      const { header, meta } = splitDateFromHeader(text);
+      current = meta ? { header, meta, bullets: [] } : { header, bullets: [] };
+    } else if (current) {
+      // A description/achievement line under the current role.
+      current.bullets.push(text);
+    } else {
+      // No role context yet — treat the first stray line as a header.
+      current = { header: text, bullets: [] };
+    }
+  }
+  if (current) entries.push(current);
+  return entries;
+}
+
 interface Body { summary: string; sections: ResumeSection[]; skills: string[] }
 
 /** Walk the lines below the header, grouping them under their section headings. */
@@ -290,13 +364,18 @@ function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
   const sections: ResumeSection[] = [];
   let skills: string[] = [];
   let summary = "";
-  let current: { label: string; skills: boolean; items: string[] } | null = null;
+  let current: { label: string; skills: boolean; items: Array<{ text: string; bullet: boolean }> } | null = null;
 
   const flush = () => {
     if (!current) return;
-    if (current.label === "Summary") summary = (summary ? summary + " " : "") + current.items.join(" ").trim();
-    else if (current.skills) skills = skills.concat(splitSkills(current.items));
-    else if (current.items.length) sections.push({ heading: current.label, items: current.items });
+    const texts = current.items.map((i) => i.text);
+    if (current.label === "Summary") summary = (summary ? summary + " " : "") + texts.join(" ").trim();
+    else if (current.skills) skills = skills.concat(splitSkills(texts));
+    else if (texts.length) {
+      const section: ResumeSection = { heading: current.label, items: texts };
+      if (current.label === "Experience") section.entries = groupExperience(current.items);
+      sections.push(section);
+    }
     current = null;
   };
 
@@ -315,13 +394,14 @@ function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
     if (prefix) {
       flush();
       current = { label: prefix.label, skills: prefix.skills, items: [] };
-      if (prefix.remainder && prefix.remainder !== name) current.items.push(prefix.remainder);
+      if (prefix.remainder && prefix.remainder !== name) current.items.push({ text: prefix.remainder, bullet: false });
       continue;
     }
     if (!current) continue;              // stray line before any heading
     if (isContact(line.text)) continue;  // keep contact noise out of sections
+    const bullet = BULLET_LEAD.test(line.text);
     const item = line.text.replace(BULLET_LEAD, "").trim();
-    if (item && item !== name) current.items.push(item);
+    if (item && item !== name) current.items.push({ text: item, bullet });
   }
   flush();
   return { summary, sections, skills: [...new Set(skills)].slice(0, 30) };

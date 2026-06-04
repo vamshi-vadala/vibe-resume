@@ -273,9 +273,25 @@ function ResumeSite({ data, photoUrl }: { data: ResumeData; photoUrl: string }) 
       {data.sections.map((sec, i) => (
         <section key={i} className={styles.siteSection}>
           <h2 className={styles.siteH2}>{sec.heading}</h2>
-          <ul className={styles.siteList}>
-            {sec.items.map((it, n) => <li key={n}>{it}</li>)}
-          </ul>
+          {sec.entries ? (
+            sec.entries.map((e, n) => (
+              <div key={n} className={styles.siteEntry}>
+                <div className={styles.siteEntryHead}>
+                  {e.header && <span className={styles.siteEntryTitle}>{e.header}</span>}
+                  {e.meta && <span className={styles.siteEntryMeta}>{e.meta}</span>}
+                </div>
+                {e.bullets.length > 0 && (
+                  <ul className={styles.siteList}>
+                    {e.bullets.map((b, k) => <li key={k}>{b}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))
+          ) : (
+            <ul className={styles.siteList}>
+              {sec.items.map((it, n) => <li key={n}>{it}</li>)}
+            </ul>
+          )}
         </section>
       ))}
     </article>

@@ -148,3 +148,77 @@ test("standalone place names and short fragments are rejected from skills chips"
   assert.ok(!d.skills.includes("boosting"), "lowercase fragment rejected");
   assert.ok(!d.skills.some((s) => s.startsWith("of ")), "prepositional fragment rejected");
 });
+
+// ---- Experience: multi-job sub-grouping ----------------------------------
+
+test("experience splits into per-role entries with date on its own line", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Experience", 13),
+    L("Senior Designer, Acme Corp", 11),
+    L("Jan 2020 — Present", 10),
+    L("• Led the design system", 10),
+    L("• Shipped the marketing redesign", 10),
+    L("Designer, Beta Inc", 11),
+    L("2017 — 2019", 10),
+    L("• Built the component library", 10),
+  ]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.ok(exp?.entries, "Experience has entries");
+  assert.equal(exp!.entries!.length, 2);
+  assert.equal(exp!.entries![0].header, "Senior Designer, Acme Corp");
+  assert.equal(exp!.entries![0].meta, "Jan 2020 — Present");
+  assert.deepEqual(exp!.entries![0].bullets, ["Led the design system", "Shipped the marketing redesign"]);
+  assert.equal(exp!.entries![1].header, "Designer, Beta Inc");
+  assert.equal(exp!.entries![1].meta, "2017 — 2019");
+  assert.deepEqual(exp!.entries![1].bullets, ["Built the component library"]);
+  // flat items still populated for backward compatibility
+  assert.ok(exp!.items.includes("Led the design system"));
+});
+
+test("date range embedded in the header line is pulled into meta", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Experience", 13),
+    L("Product Manager, Globex (May 2021 — Aug 2022)", 11),
+    L("• Owned the roadmap", 10),
+  ]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.equal(exp!.entries!.length, 1);
+  assert.equal(exp!.entries![0].header, "Product Manager, Globex");
+  assert.equal(exp!.entries![0].meta, "May 2021 — Aug 2022");
+  assert.deepEqual(exp!.entries![0].bullets, ["Owned the roadmap"]);
+});
+
+test("achievement lines without bullet markers attach to the role, not as new roles", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Experience", 13),
+    L("Lead Designer — Acme Corp", 11),
+    L("2021 — Present", 10),
+    L("Drove a 32% lift in activation through an onboarding redesign.", 10),
+    L("Built and led a team of 4 designers.", 10),
+    L("Product Designer — Globex", 11),
+    L("2018 — 2021", 10),
+    L("Shipped a design system across 12 surfaces.", 10),
+  ]);
+  const exp = d.sections.find((s) => s.heading === "Experience");
+  assert.equal(exp!.entries!.length, 2, "two roles, not six");
+  assert.equal(exp!.entries![0].header, "Lead Designer — Acme Corp");
+  assert.equal(exp!.entries![0].meta, "2021 — Present");
+  assert.equal(exp!.entries![0].bullets.length, 2);
+  assert.equal(exp!.entries![1].header, "Product Designer — Globex");
+  assert.equal(exp!.entries![1].bullets.length, 1);
+});
+
+test("only the Experience section gets entries; others stay flat", () => {
+  const d = parseResume([
+    L("Jane Doe", 20),
+    L("Education", 13),
+    L("B.A. Design, State University", 11),
+    L("2013 — 2017", 10),
+  ]);
+  const edu = d.sections.find((s) => s.heading === "Education");
+  assert.ok(edu, "Education section exists");
+  assert.equal(edu!.entries, undefined, "non-Experience section has no entries");
+});
