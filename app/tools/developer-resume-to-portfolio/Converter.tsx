@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import posthog from "posthog-js";
-import { analyzeDevResume, SAMPLE_DEV_RESUME, type DevProfile } from "@/lib/devresume.ts";
+import {
+  analyzeDevResume, SAMPLE_DEV_RESUME, usernameFromGitHubUrl, topReposFromApi, mergeRepos,
+  type DevProfile, type DevRepo,
+} from "@/lib/devresume.ts";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "developer-resume-to-portfolio";
@@ -26,9 +29,40 @@ function slug(name: string) {
   return (name || "you").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 24) || "you";
 }
 
+/** Fetch a user's public repos from GitHub (client-side → visitor's own rate limit). */
+async function fetchUserRepos(username: string): Promise<DevRepo[] | null> {
+  // Bound the wait — on a slow/blocked network we fall back rather than hang.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const res = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=pushed`,
+      { headers: { Accept: "application/vnd.github+json" }, signal: ctrl.signal }
+    );
+    if (!res.ok) return null; // 404 / rate-limited → fall back to resume-listed repos
+    const json = await res.json();
+    return Array.isArray(json) ? topReposFromApi(json, 6) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Resume-listed repos first (the candidate's pick), enriched from the live data. */
+function combineRepos(textRepos: DevRepo[], liveRepos: DevRepo[]): DevRepo[] {
+  const key = (r: DevRepo) => `${r.owner}/${r.name}`.toLowerCase();
+  const live = new Map(liveRepos.map((r) => [key(r), r]));
+  const chosen = textRepos.map((t) => live.get(key(t)) ?? t); // enrich if GitHub knows it
+  const chosenKeys = new Set(textRepos.map(key));
+  const rest = liveRepos.filter((r) => !chosenKeys.has(key(r)));
+  return mergeRepos(chosen, rest, 8);
+}
+
 export default function Converter() {
   const [src, setSrc] = useState("");
   const [data, setData] = useState<DevProfile | null>(null);
+  const [liveRepos, setLiveRepos] = useState<DevRepo[]>([]);
   const [error, setError] = useState("");
 
   function run(text: string) {
@@ -42,6 +76,16 @@ export default function Converter() {
     }
     setError("");
     setData(profile);
+    setLiveRepos([]);
+    // Deliver "repos pulled out automatically": if a GitHub profile is present,
+    // fetch the real repos and fold them in. Fire-and-forget — the preview shows
+    // immediately and never blocks on the network.
+    const user = usernameFromGitHubUrl(profile.githubUrl);
+    if (user) {
+      fetchUserRepos(user).then((repos) => {
+        if (repos && repos.length) setLiveRepos(repos);
+      });
+    }
     track("tool_completed", { stack: profile.stack.length, repos: profile.repos.length });
     requestAnimationFrame(() =>
       document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -90,7 +134,7 @@ export default function Converter() {
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
               <span className={styles.url}>vibe.dev/{slug(data.name)}</span>
             </div>
-            <Portfolio data={data} />
+            <Portfolio data={data} repos={combineRepos(data.repos, liveRepos)} />
           </div>
 
           <div className={styles.actions}>
@@ -117,7 +161,7 @@ const LINK_LABEL: Record<string, string> = {
 };
 
 /** The generated developer portfolio — a single polished, responsive template. */
-function Portfolio({ data }: { data: DevProfile }) {
+function Portfolio({ data, repos }: { data: DevProfile; repos: DevRepo[] }) {
   const allLinks = [
     ...(data.githubUrl ? [{ kind: "github", label: data.githubUrl.replace(/^https?:\/\//, ""), url: data.githubUrl }] : []),
     ...data.links,
@@ -167,21 +211,26 @@ function Portfolio({ data }: { data: DevProfile }) {
         </section>
       )}
 
-      {(data.repos.length > 0 || data.projects.length > 0) && (
+      {(repos.length > 0 || data.projects.length > 0) && (
         <section className={styles.siteSection}>
           <h2 className={styles.siteH2}>Projects</h2>
-          {data.repos.length > 0 && (
+          {repos.length > 0 && (
             <div className={styles.repos}>
-              {data.repos.map((r, i) => (
+              {repos.map((r, i) => (
                 <a key={i} className={styles.repoCard} href={r.url} target="_blank" rel="noopener noreferrer">
                   <div className={styles.repoName}>{r.name}</div>
-                  <div className={styles.repoOwner}>{r.owner}/{r.name}</div>
+                  {r.description && <div className={styles.repoDesc}>{r.description}</div>}
+                  <div className={styles.repoMeta}>
+                    {r.language && <span>{r.language}</span>}
+                    {typeof r.stars === "number" && r.stars > 0 && <span>★ {r.stars}</span>}
+                    <span className={styles.repoOwner}>{r.owner}/{r.name}</span>
+                  </div>
                 </a>
               ))}
             </div>
           )}
           {data.projects.length > 0 && (
-            <ul className={styles.entryList} style={{ marginTop: data.repos.length ? 14 : 0 }}>
+            <ul className={styles.entryList} style={{ marginTop: repos.length ? 14 : 0 }}>
               {data.projects.map((p, i) => <li key={i}>{p}</li>)}
             </ul>
           )}

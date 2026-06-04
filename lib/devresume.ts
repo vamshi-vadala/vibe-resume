@@ -16,6 +16,21 @@ export interface DevRepo {
   owner: string;
   name: string;
   url: string;
+  description?: string | null;
+  stars?: number;
+  language?: string | null;
+}
+
+/** The subset of GitHub's /users/:u/repos response we use. */
+export interface GitHubApiRepo {
+  name: string;
+  html_url: string;
+  description: string | null;
+  stargazers_count: number;
+  language: string | null;
+  fork: boolean;
+  archived?: boolean;
+  owner: { login: string };
 }
 export interface DevProfile {
   name: string;
@@ -117,6 +132,46 @@ export function detectGitHub(text: string): { githubUrl: string | null; repos: D
   // A repo owner also implies the profile, if no bare profile link was present.
   if (!githubUrl && repos.length) githubUrl = `https://github.com/${repos[0].owner}`;
   return { githubUrl, repos };
+}
+
+/** Extract the GitHub username from a profile URL like https://github.com/jane. */
+export function usernameFromGitHubUrl(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/github\.com\/([A-Za-z0-9-]+)/i);
+  return m ? m[1] : null;
+}
+
+/**
+ * Rank a user's GitHub repos for a portfolio: drop forks and archived repos,
+ * then sort by stars (desc), breaking ties by name for determinism.
+ */
+export function topReposFromApi(apiRepos: GitHubApiRepo[], limit = 6): DevRepo[] {
+  return apiRepos
+    .filter((r) => !r.fork && !r.archived)
+    .sort((a, b) => b.stargazers_count - a.stargazers_count || a.name.localeCompare(b.name))
+    .slice(0, limit)
+    .map((r) => ({
+      owner: r.owner.login,
+      name: r.name,
+      url: r.html_url,
+      description: r.description,
+      stars: r.stargazers_count,
+      language: r.language,
+    }));
+}
+
+/** Merge two repo lists, de-duping by owner/name (first list wins), capped. */
+export function mergeRepos(primary: DevRepo[], extra: DevRepo[], limit = 6): DevRepo[] {
+  const out: DevRepo[] = [];
+  const seen = new Set<string>();
+  for (const r of [...primary, ...extra]) {
+    const key = `${r.owner}/${r.name}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 const LINK_PATTERNS: Array<{ kind: LinkKind; re: RegExp }> = [

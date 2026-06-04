@@ -18,7 +18,21 @@ async function colorOf(page: Page, selector: string) {
   return page.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
 }
 
+// Deterministic, offline GitHub: every test stubs api.github.com so the suite
+// never depends on the live API (rate limits / network) and we can assert the
+// live-pull rendering exactly.
+const MOCK_REPOS = [
+  { name: "awesome-lib", html_url: "https://github.com/alexrivera/awesome-lib", description: "A handy library.", stargazers_count: 142, language: "Rust", fork: false, archived: false, owner: { login: "alexrivera" } },
+  { name: "a-fork", html_url: "https://github.com/alexrivera/a-fork", description: null, stargazers_count: 9999, language: "C", fork: true, archived: false, owner: { login: "alexrivera" } },
+];
+
 test.describe("developer resume→portfolio tool", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route("**://api.github.com/**", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOCK_REPOS) })
+    );
+  });
+
   test("sample renders the portfolio preview with stack and projects", async ({ page }) => {
     await page.goto(URL);
 
@@ -38,7 +52,11 @@ test.describe("developer resume→portfolio tool", () => {
     await expect(page.locator("#result").getByText("Experience")).toBeVisible();
     await expect(page.locator("#result").getByText("Senior Software Engineer — Stripe")).toBeVisible();
     await expect(page.locator("#result").getByText("Projects")).toBeVisible();
+    // resume-listed repo (always shown) and the live-pulled repo (from the stubbed API)
     await expect(page.locator("#result").getByText("ratelimit-go", { exact: true })).toBeVisible();
+    await expect(page.locator("#result").getByText("awesome-lib", { exact: true })).toBeVisible();
+    await expect(page.locator("#result").getByText("★ 142")).toBeVisible();
+    await expect(page.locator("#result").getByText("a-fork")).toHaveCount(0); // forks dropped
 
     // CTA band is dark in BOTH themes -> its text must stay light
     const ctaText = await colorOf(page, ":text('publish it with your own URL')");

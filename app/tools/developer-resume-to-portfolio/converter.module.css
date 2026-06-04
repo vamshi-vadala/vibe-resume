@@ -76,7 +76,9 @@
 }
 .repoCard:hover { border-color: var(--accent); }
 .repoName { font-weight: 700; font-size: 15px; }
-.repoOwner { color: var(--muted); font-size: 13px; margin-top: 3px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.repoDesc { color: var(--text); font-size: 13.5px; line-height: 1.45; margin-top: 5px; }
+.repoMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.repoOwner { color: var(--muted); font-size: 12.5px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 
 @media (max-width: 560px) {
   .siteName { font-size: 25px; }
