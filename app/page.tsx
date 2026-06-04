@@ -20,10 +20,14 @@ const LIVE = [
     name: "ATS Plain-Text Converter",
     desc: "See your resume the way an ATS robot reads it, with a 0–100 score and fixes.",
   },
+  {
+    href: "/tools/developer-resume-to-portfolio",
+    name: "Developer Resume → Portfolio",
+    desc: "Flip a dev resume into a portfolio — your GitHub, projects and tech stack, auto-detected.",
+  },
 ];
 
 const SOON = [
-  { name: "Developer Resume → Portfolio", desc: "Convert a dev resume into a portfolio site." },
   { name: "GitHub → Portfolio", desc: "Generate a portfolio from just your GitHub username." },
 ];
 
