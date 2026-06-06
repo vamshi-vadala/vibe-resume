@@ -1,3 +1,11 @@
+/* Theme tokens.
+   - :root holds the LIGHT palette (the default).
+   - :root[data-theme="dark"] is the explicit Dark choice.
+   - The prefers-color-scheme block applies Dark only when the visitor hasn't
+     made an explicit choice (System mode), so a manual pick always wins.
+   The data-theme attribute is set before first paint by the inline script in
+   layout.tsx, so there's no flash of the wrong theme. */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -14,14 +22,35 @@
   --on-accent2: #ffffff;
   --warn: #8a5200;
   --bad: #b91c1c;
+
+  color-scheme: light;
+}
+
+/* dark palette, shared by the explicit choice and System-dark */
+:root[data-theme="dark"] {
+  --background: #0b0d10;
+  --foreground: #e7ecf2;
+
+  --panel: #14181d;
+  --panel2: #1b2026;
+  --line: #272d35;
+  --text: #e7ecf2;
+  --muted: #93a0b0;
+  --accent: #5b8cff;
+  --on-accent: #07142e;
+  --accent2: #3ad29f;
+  --on-accent2: #06281d;
+  --warn: #ffb454;
+  --bad: #ff6b6b;
+
+  color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
     --background: #0b0d10;
     --foreground: #e7ecf2;
 
-    /* semantic UI palette — dark */
     --panel: #14181d;
     --panel2: #1b2026;
     --line: #272d35;
@@ -33,6 +62,8 @@
     --on-accent2: #06281d;
     --warn: #ffb454;
     --bad: #ff6b6b;
+
+    color-scheme: dark;
   }
 }
 
@@ -73,8 +104,9 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* smooth, subtle fade when the theme changes (not on first paint) */
+@media (prefers-reduced-motion: no-preference) {
+  *, *::before, *::after {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 }

@@ -21,14 +21,19 @@ export const metadata: Metadata = {
   description: "Free tools to turn your resume and profile into a shareable website.",
 };
 
+// Runs before first paint: applies a saved Light/Dark choice so there's no
+// flash of the wrong theme. No saved choice = System (the CSS media query wins).
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <Analytics>
           <SiteHeader />
           <div className={chrome.main}>{children}</div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TOOLS } from "@/lib/tools.ts";
+import ThemeToggle from "./ThemeToggle";
 import styles from "./chrome.module.css";
 
 const SIGNUP = "/signup?utm_source=nav&utm_campaign=header";
@@ -38,6 +39,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className={styles.nav} aria-label="Primary">
+          <ThemeToggle />
           <div className={styles.menuWrap} ref={menuRef}>
             <button
               type="button"
