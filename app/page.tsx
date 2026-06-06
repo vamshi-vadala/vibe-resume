@@ -30,11 +30,14 @@ const LIVE = [
     name: "GitHub → Portfolio",
     desc: "One field: a GitHub username. Out comes a portfolio — bio, top repos and tech stack.",
   },
+  {
+    href: "/tools/theme-picker",
+    name: "Dev Portfolio Theme Picker",
+    desc: "Swipe through portfolio themes like a deck of cards and keep the look you love.",
+  },
 ];
 
-const SOON = [
-  { name: "ThemeDeck", desc: "Swipe through portfolio themes to find your look." },
-];
+const SOON: { name: string; desc: string }[] = [];
 
 export default function Home() {
   return (
@@ -60,18 +63,22 @@ export default function Home() {
         ))}
       </div>
 
-      <div className={styles.sectionTitle}>Coming soon</div>
-      <div className={styles.grid}>
-        {SOON.map((t) => (
-          <div key={t.name} className={`${styles.card} ${styles.cardSoon}`}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardName}>{t.name}</span>
-              <span className={`${styles.badge} ${styles.badgeSoon}`}>Soon</span>
-            </div>
-            <span className={styles.cardDesc}>{t.desc}</span>
+      {SOON.length > 0 && (
+        <>
+          <div className={styles.sectionTitle}>Coming soon</div>
+          <div className={styles.grid}>
+            {SOON.map((t) => (
+              <div key={t.name} className={`${styles.card} ${styles.cardSoon}`}>
+                <div className={styles.cardHead}>
+                  <span className={styles.cardName}>{t.name}</span>
+                  <span className={`${styles.badge} ${styles.badgeSoon}`}>Soon</span>
+                </div>
+                <span className={styles.cardDesc}>{t.desc}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <footer className={styles.footer}>Vibe Resume</footer>
     </div>
