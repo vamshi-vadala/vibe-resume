@@ -45,6 +45,9 @@ next-env.d.ts
 /playwright-report/
 /playwright/.cache/
 
+# local e2e server logs (from the reliable-recipe runs)
+e2e-*.log
+
 .vercel
 .env*
 .env.local

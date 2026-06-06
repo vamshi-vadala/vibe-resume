@@ -87,7 +87,11 @@
 .footerBase {
   max-width: 1000px; margin: 0 auto; padding: 16px 20px 28px;
   border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
 }
+.footerLegal { display: inline-flex; gap: 16px; }
+.footerLegal a { color: var(--muted); }
+.footerLegal a:hover { color: var(--accent); }
 
 @media (max-width: 640px) {
   .footerInner { grid-template-columns: 1fr 1fr; gap: 24px; }

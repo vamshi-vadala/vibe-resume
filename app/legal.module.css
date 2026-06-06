@@ -1,0 +1,13 @@
+.wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 64px; }
+.wrap h1 { font-size: 32px; line-height: 1.15; margin: 0 0 8px; }
+.updated { color: var(--muted); font-size: 13.5px; margin: 0 0 24px; }
+.wrap h2 { font-size: 19px; margin: 28px 0 10px; }
+.wrap p { color: var(--text); font-size: 15.5px; line-height: 1.7; margin: 0 0 12px; max-width: 70ch; }
+.wrap ul { margin: 0 0 14px; padding-left: 22px; }
+.wrap li { color: var(--text); font-size: 15.5px; line-height: 1.65; margin: 6px 0; }
+.wrap a { color: var(--accent); font-weight: 600; }
+.wrap strong { font-weight: 700; }
+.note {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 24px;
+}

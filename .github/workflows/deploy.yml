@@ -26,6 +26,9 @@ jobs:
       - name: Unit tests (pure parser) — fast gate
         run: npm run test:unit
 
+      - name: Type-check & build — catches TS/build errors independent of Vercel
+        run: npm run build
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 

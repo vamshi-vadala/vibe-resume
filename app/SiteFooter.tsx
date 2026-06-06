@@ -28,7 +28,14 @@ export default function SiteFooter() {
           <Link href="/signup?utm_source=nav&utm_campaign=footer" className={styles.footerLink}>Publish your resume</Link>
         </nav>
       </div>
-      <div className={styles.footerBase}>© {new Date().getFullYear()} Vibe Resume</div>
+      <div className={styles.footerBase}>
+        <span>© {new Date().getFullYear()} Vibe Resume</span>
+        <span className={styles.footerLegal}>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/contact">Contact</Link>
+        </span>
+      </div>
     </footer>
   );
 }

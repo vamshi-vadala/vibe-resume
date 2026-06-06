@@ -97,7 +97,8 @@ Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcomi
 - **Goal-grouped landing page** — the 10 tools are grouped by intent ("Get your resume online" / "Make your portfolio shine" / "Own your personal brand") from `lib/tools.ts` (a `group` field + `TOOL_GROUPS`).
 - **Global navigation** — a sticky `SiteHeader` (wordmark → home, accessible Tools dropdown, theme toggle, Get-started CTA) and a `SiteFooter` link mesh, both reading the **single tool registry** `lib/tools.ts` so they can't drift. Add a new tool there and it appears everywhere.
 - **System / Light / Dark theme toggle** — a 3-state header control (`ThemeToggle`) persisted to `localStorage`. `:root` is light, `:root[data-theme="dark"]` is explicit dark, and `prefers-color-scheme` only applies when no manual choice is set (so System follows the OS but a pick always wins). A blocking inline script in `layout.tsx` applies the saved theme **before first paint** (no flash of the wrong theme).
-- **SEO template** — exact-match `<h1>`, `/tools/{kebab-keyword}` slug, OpenGraph (+ per-tool `opengraph-image`), canonical, `app/sitemap.ts`, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Tools cross-link siblings; the footer links all ten from every page.
+- **SEO template** — exact-match `<h1>`, unique keyword-rich meta description per page, `/tools/{kebab-keyword}` slug, OpenGraph (+ per-tool `opengraph-image`), canonical, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Site-wide: `metadataBase` (so OG/canonical URLs resolve to the production origin), `app/sitemap.ts`, `app/robots.ts`, and `app/manifest.ts` + `app/icon.svg`. Tools cross-link siblings; the footer links all ten from every page.
+- **Trust & legal** — Privacy, Terms and Contact pages (`/privacy`, `/terms`, `/contact`), linked in the footer. The privacy policy is honest about the model: resume content is processed in the browser and never uploaded; only a waitlist email (if given) and anonymous PostHog analytics are collected.
 - **Conversion tracking** — funnel events (`page_view`, `tool_started`, `tool_completed`, `result_interacted`, `cta_clicked`) pushed to `dataLayer` + PostHog, each stamped with `tool_slug`. Result-gated, UTM-tagged CTAs.
 - **Pure, testable logic** — every tool's analysis/generation lives in a dependency-free `lib/*.ts` covered by the Node test runner; the React layer is a thin client component.
 
@@ -119,7 +120,8 @@ app/
   page.tsx  page.module.css   # goal-grouped landing page
   providers.tsx               # PostHog analytics wiring
   SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx chrome.module.css   # global nav + theme toggle
-  sitemap.ts                  # lists all 10 tool URLs
+  sitemap.ts robots.ts manifest.ts icon.svg   # SEO/PWA metadata routes + brand icon
+  privacy/ terms/ contact/    # legal + contact pages (legal.module.css)
   signup/                     # waitlist landing + client form
   api/waitlist/route.ts       # POST add email / GET admin read (Upstash)
   tools/<slug>/               # one dir per tool:
@@ -166,9 +168,9 @@ Open [http://localhost:3000](http://localhost:3000) and pick a tool, or jump to 
 
 ## Testing & CI
 
-`.github/workflows/deploy.yml` runs on every push to `main`: unit tests → Playwright e2e (light + dark + axe contrast, a hard gate) → Vercel build & deploy (when `VERCEL_TOKEN` is set).
+`.github/workflows/deploy.yml` runs on every push to `main`: unit tests → `next build` (TS/build gate) → Playwright e2e (light + dark + axe contrast, a hard gate) → Vercel build & deploy (when `VERCEL_TOKEN` is set).
 
-- **`npm run build` is not in CI** — the Vercel build is the gate, so run `npm run build` locally to catch TS errors before pushing.
+- **Still run `npm run build` locally before pushing** — it's faster to catch a TS error there than to wait for CI. A unit test (`test/sitemap.unit.test.ts`) also fails the build if the sitemap and the `lib/tools.ts` registry drift apart.
 - **Contrast is enforced.** Every tool's result is axe-checked in both themes. Note: **CI's Linux Chromium is the source of truth for color-contrast** — local (Windows/macOS) Chromium can *false-pass* borderline values (`< ~4.6:1`). The convention: never put colored text on a same-hue `color-mix` tint (it lands ~4.4:1); use a solid token surface (`--panel`/`--panel2`) or the solid accent pairing (`--accent2`/`--on-accent2`), keeping a comfortable margin over 4.5:1.
 
 ## Environment

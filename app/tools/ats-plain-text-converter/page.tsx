@@ -8,7 +8,7 @@ const SLUG = "/tools/ats-plain-text-converter";
 export const metadata: Metadata = {
   title: `${PRIMARY_KEYWORD} — Free Tool by Vibe Resume`,
   description:
-    "See your resume the way an ATS robot does. Paste your resume and get a clean, ATS-safe plain-text version instantly — free.",
+    "See how applicant tracking systems read your resume. Get a 0–100 ATS score, spot parsing issues, and copy a clean plain-text version — free, no signup.",
   alternates: { canonical: SLUG },
   openGraph: {
     title: `${PRIMARY_KEYWORD} — Free Tool by Vibe Resume`,
