@@ -16,9 +16,12 @@
 }
 
 .brand { display: inline-flex; align-items: center; gap: 9px; color: var(--text); }
+/* Brand monogram — fixed colors (consistent in light & dark; matches the favicon) */
 .mark {
-  width: 20px; height: 20px; border-radius: 6px; flex: 0 0 auto;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  width: 26px; height: 26px; border-radius: 8px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #5b8cff, #3ad29f);
+  color: #07142e; font-weight: 800; font-size: 11.5px; letter-spacing: -0.4px;
 }
 .brandName { font-weight: 800; font-size: 16px; letter-spacing: -0.2px; }
 

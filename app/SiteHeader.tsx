@@ -34,7 +34,7 @@ export default function SiteHeader() {
     <header className={styles.header}>
       <div className={styles.headerInner}>
         <Link href="/" className={styles.brand} aria-label="Vibe Resume home">
-          <span className={styles.mark} aria-hidden />
+          <span className={styles.mark} aria-hidden>VR</span>
           <span className={styles.brandName}>Vibe Resume</span>
         </Link>
 

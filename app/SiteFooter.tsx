@@ -9,7 +9,7 @@ export default function SiteFooter() {
       <div className={styles.footerInner}>
         <div className={styles.footerBrand}>
           <Link href="/" className={styles.brand} aria-label="Vibe Resume home">
-            <span className={styles.mark} aria-hidden />
+            <span className={styles.mark} aria-hidden>VR</span>
             <span className={styles.brandName}>Vibe Resume</span>
           </Link>
           <p className={styles.footerTag}>Free tools to turn your resume and profile into a website.</p>
