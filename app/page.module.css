@@ -1,13 +1,19 @@
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
 
-.hero { padding: 72px 0 28px; text-align: center; }
+.hero { padding: 72px 0 20px; text-align: center; }
 .hero h1 { font-size: 40px; line-height: 1.12; margin: 0 0 14px; letter-spacing: -0.5px; }
 .hero p { color: var(--muted); font-size: 18px; max-width: 620px; margin: 0 auto; }
+@media (max-width: 720px) { .hero h1 { font-size: 30px; } }
 
-.sectionTitle { font-size: 14px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 36px 0 14px; }
+/* goal-based groups */
+.group { margin-top: 44px; }
+.group:first-of-type { margin-top: 28px; }
+.groupHead { margin: 0 0 16px; }
+.groupTitle { font-size: 22px; line-height: 1.2; margin: 0; letter-spacing: -0.3px; }
+.groupGoal { color: var(--muted); font-size: 15px; margin: 6px 0 0; max-width: 62ch; }
 
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .hero h1 { font-size: 30px; } }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
 
 .card {
   display: flex; flex-direction: column; gap: 6px;
@@ -16,14 +22,6 @@
 }
 .cardLive { transition: border-color .15s, transform .15s; }
 .cardLive:hover { border-color: var(--accent); transform: translateY(-2px); }
-.cardSoon { opacity: .6; }
 
-.cardHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .cardName { font-size: 17px; font-weight: 700; }
-.cardDesc { color: var(--muted); font-size: 14px; }
-
-.badge { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; }
-.badgeLive { background: var(--accent2); color: var(--on-accent2); }
-.badgeSoon { background: var(--panel2); color: var(--muted); border: 1px solid var(--line); }
-
-.footer { color: var(--muted); font-size: 13px; text-align: center; padding: 48px 0; }
+.cardDesc { color: var(--muted); font-size: 14px; line-height: 1.45; }

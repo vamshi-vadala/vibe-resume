@@ -62,7 +62,8 @@
 .aiBar {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
   margin-top: 16px; padding: 14px 16px; border-radius: 12px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--panel2));
+  /* solid surface (not an accent tint) so the accent text keeps a safe AA margin */
+  background: var(--panel2);
   border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
   color: var(--text);
 }

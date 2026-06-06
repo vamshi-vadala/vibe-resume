@@ -40,7 +40,10 @@
   transition: border-color .15s ease;
 }
 .item:hover { border-color: var(--accent); }
-.itemBest { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, var(--panel2)); }
+/* accent border marks the recommended item; keep the solid --panel2 background
+   so the accent slug + muted note stay comfortably above AA (a same-hue tint
+   dropped them to ~4.6:1). */
+.itemBest { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .itemMain { min-width: 0; }
 
 .urlLine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
