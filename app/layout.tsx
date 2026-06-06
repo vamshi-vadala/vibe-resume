@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "./providers";
+import SiteHeader from "./SiteHeader";
+import SiteFooter from "./SiteFooter";
+import chrome from "./chrome.module.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +29,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <Analytics>{children}</Analytics>
+        <Analytics>
+          <SiteHeader />
+          <div className={chrome.main}>{children}</div>
+          <SiteFooter />
+        </Analytics>
       </body>
     </html>
   );

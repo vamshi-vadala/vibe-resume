@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TOOLS } from "@/lib/tools.ts";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -9,33 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const LIVE = [
-  {
-    href: "/tools/pdf-resume-to-website",
-    name: "PDF Resume → Website",
-    desc: "Upload a PDF resume and preview it as a clean personal website — in your browser.",
-  },
-  {
-    href: "/tools/ats-plain-text-converter",
-    name: "ATS Plain-Text Converter",
-    desc: "See your resume the way an ATS robot reads it, with a 0–100 score and fixes.",
-  },
-  {
-    href: "/tools/developer-resume-to-portfolio",
-    name: "Developer Resume → Portfolio",
-    desc: "Flip a dev resume into a portfolio — your GitHub, projects and tech stack, auto-detected.",
-  },
-  {
-    href: "/tools/github-to-portfolio",
-    name: "GitHub → Portfolio",
-    desc: "One field: a GitHub username. Out comes a portfolio — bio, top repos and tech stack.",
-  },
-  {
-    href: "/tools/theme-picker",
-    name: "Dev Portfolio Theme Picker",
-    desc: "Swipe through portfolio themes like a deck of cards and keep the look you love.",
-  },
-];
+const LIVE = TOOLS;
 
 const SOON: { name: string; desc: string }[] = [];
 
@@ -79,8 +54,6 @@ export default function Home() {
           </div>
         </>
       )}
-
-      <footer className={styles.footer}>Vibe Resume</footer>
     </div>
   );
 }

@@ -83,6 +83,7 @@ export default function Page() {
             <li><a href="/tools/developer-resume-to-portfolio">Developer Resume → Portfolio</a></li>
             <li><a href="/tools/github-to-portfolio">GitHub → Portfolio Converter</a></li>
             <li><a href="/tools/theme-picker">Dev Portfolio Themes</a></li>
+            <li><a href="/tools/linkedin-url-customizer">LinkedIn URL Customizer</a></li>
           </ul>
         </section>
 

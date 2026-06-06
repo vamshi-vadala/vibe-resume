@@ -10,5 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/developer-resume-to-portfolio`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/github-to-portfolio`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/theme-picker`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/tools/linkedin-url-customizer`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   ];
 }
