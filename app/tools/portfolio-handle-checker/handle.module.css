@@ -33,7 +33,9 @@
   padding: 14px 16px; border-radius: 12px;
   background: var(--panel2); border: 1px solid var(--line);
 }
-.ghFree { border-color: color-mix(in srgb, var(--accent2) 50%, var(--line)); background: color-mix(in srgb, var(--accent2) 8%, var(--panel2)); }
+/* border-only indicator — a same-hue tinted background would drop the green
+   status text below WCAG AA (4.37:1). Keep it on plain --panel2 (4.85:1). */
+.ghFree { border-color: color-mix(in srgb, var(--accent2) 50%, var(--line)); }
 .ghTaken { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
 .ghMain { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-right: auto; }
 .ghLabel { font-weight: 700; font-size: 15px; }
