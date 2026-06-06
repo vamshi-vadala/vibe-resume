@@ -50,4 +50,10 @@ export const TOOLS: Tool[] = [
     nav: "LinkedIn URL",
     desc: "Turn your name into clean, professional custom profile URLs you can claim.",
   },
+  {
+    href: "/tools/portfolio-about-me-generator",
+    name: "Portfolio About Me Generator",
+    nav: "About Me",
+    desc: "Enter your role, pick a tone, and copy a polished portfolio “about me” in seconds.",
+  },
 ];

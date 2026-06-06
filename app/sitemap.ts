@@ -11,5 +11,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/github-to-portfolio`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/theme-picker`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/linkedin-url-customizer`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/tools/portfolio-about-me-generator`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   ];
 }

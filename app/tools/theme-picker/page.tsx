@@ -99,6 +99,7 @@ export default function Page() {
             <li><a href="/tools/pdf-resume-to-website">PDF Resume → Website Converter</a></li>
             <li><a href="/tools/developer-resume-to-portfolio">Developer Resume → Portfolio</a></li>
             <li><a href="/tools/github-to-portfolio">GitHub → Portfolio Generator</a></li>
+            <li><a href="/tools/portfolio-about-me-generator">Portfolio About Me Generator</a></li>
           </ul>
         </section>
 
