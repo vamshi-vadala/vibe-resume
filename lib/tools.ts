@@ -56,4 +56,10 @@ export const TOOLS: Tool[] = [
     nav: "About Me",
     desc: "Enter your role, pick a tone, and copy a polished portfolio “about me” in seconds.",
   },
+  {
+    href: "/tools/resume-qr-code-generator",
+    name: "Resume QR Code Generator",
+    nav: "Resume QR",
+    desc: "Turn your portfolio or resume link into a downloadable QR code — PNG or SVG.",
+  },
 ];

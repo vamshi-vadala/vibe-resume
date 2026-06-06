@@ -99,6 +99,7 @@ export default function Page() {
             <li><a href="/tools/github-to-portfolio">GitHub → Portfolio Generator</a></li>
             <li><a href="/tools/theme-picker">Dev Portfolio Theme Picker</a></li>
             <li><a href="/tools/portfolio-about-me-generator">Portfolio About Me Generator</a></li>
+            <li><a href="/tools/resume-qr-code-generator">Resume QR Code Generator</a></li>
           </ul>
         </section>
 
