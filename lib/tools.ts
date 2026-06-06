@@ -62,4 +62,16 @@ export const TOOLS: Tool[] = [
     nav: "Resume QR",
     desc: "Turn your portfolio or resume link into a downloadable QR code — PNG or SVG.",
   },
+  {
+    href: "/tools/case-study-template",
+    name: "Case Study Template",
+    nav: "Case Study",
+    desc: "Turn a project into a structured, copy-paste portfolio case study with Markdown export.",
+  },
+  {
+    href: "/tools/portfolio-handle-checker",
+    name: "Portfolio Handle Checker",
+    nav: "Handle Checker",
+    desc: "Check where @yourhandle is still free across the web and claim your portfolio URL.",
+  },
 ];

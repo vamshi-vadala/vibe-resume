@@ -22,7 +22,7 @@ test.describe("global navigation", () => {
 
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem")).toHaveCount(8);
+    await expect(menu.getByRole("menuitem")).toHaveCount(10);
 
     await menu.getByRole("menuitem", { name: /theme picker/i }).click();
     await expect(page).toHaveURL(/\/tools\/theme-picker$/);

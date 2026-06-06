@@ -79,6 +79,7 @@ export default function Page() {
             <li><a href="/tools/github-to-portfolio">GitHub → Portfolio Converter</a></li>
             <li><a href="/tools/theme-picker">Portfolio Theme Picker</a></li>
             <li><a href="/tools/linkedin-url-customizer">Customize your LinkedIn URL</a></li>
+            <li><a href="/tools/case-study-template">Case Study Template</a></li>
           </ul>
         </section>
 

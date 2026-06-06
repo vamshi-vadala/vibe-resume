@@ -82,6 +82,7 @@ export default function Page() {
             <li><a href="/tools/pdf-resume-to-website">PDF Resume → Website Converter</a></li>
             <li><a href="/tools/ats-plain-text-converter">ATS Plain-Text Resume Converter</a></li>
             <li><a href="/tools/theme-picker">Browse portfolio themes</a></li>
+            <li><a href="/tools/portfolio-handle-checker">Portfolio Handle Checker</a></li>
           </ul>
         </section>
 

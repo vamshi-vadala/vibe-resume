@@ -97,6 +97,7 @@ export default function Page() {
             <li><a href="/tools/pdf-resume-to-website">PDF Resume → Website Converter</a></li>
             <li><a href="/tools/theme-picker">Dev Portfolio Theme Picker</a></li>
             <li><a href="/tools/linkedin-url-customizer">LinkedIn URL Customizer</a></li>
+            <li><a href="/tools/case-study-template">Case Study Template for Designers</a></li>
           </ul>
         </section>
 

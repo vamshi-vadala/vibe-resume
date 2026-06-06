@@ -1,0 +1,79 @@
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+
+.hero { padding: 56px 0 28px; text-align: center; }
+.hero h1 { font-size: 34px; line-height: 1.15; margin: 0 0 12px; }
+.hero p { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 auto; }
+@media (max-width: 760px) { .hero h1 { font-size: 27px; } }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 18px 0; }
+.label { display: block; font-weight: 600; margin: 0 0 8px; font-size: 14.5px; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.inputWrap {
+  display: flex; align-items: center; flex: 1 1 240px;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 0 12px;
+}
+.inputWrap:focus-within { border-color: var(--accent); }
+.at { color: var(--muted); font-size: 15px; font-weight: 700; }
+.input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--text); font-size: 15px; padding: 12px 6px; }
+.btn { cursor: pointer; border: 0; border-radius: 10px; padding: 11px 18px; font-weight: 700; font-size: 15px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.primary { background: var(--accent); color: var(--on-accent); }
+.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.accent { background: var(--accent2); color: var(--on-accent2); }
+.error { color: var(--bad); font-size: 14px; margin: 12px 0 0; }
+
+.resultHead { margin: 0 0 14px; }
+.resultTitle { font-size: 20px; margin: 0; }
+.handle { color: var(--accent); font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* GitHub row — the live check */
+.gh {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 12px;
+  background: var(--panel2); border: 1px solid var(--line);
+}
+.ghFree { border-color: color-mix(in srgb, var(--accent2) 50%, var(--line)); background: color-mix(in srgb, var(--accent2) 8%, var(--panel2)); }
+.ghTaken { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.ghMain { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-right: auto; }
+.ghLabel { font-weight: 700; font-size: 15px; }
+.ghUrl { color: var(--muted); font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+.ghStatus { font-weight: 700; font-size: 14px; }
+.statusChecking { color: var(--muted); }
+.statusFree { color: var(--accent2); }
+.statusTaken { color: var(--bad); }
+.statusUnknown { color: var(--warn); }
+.ghOpen { color: var(--accent); font-weight: 600; font-size: 14px; }
+.ghOpen:hover { text-decoration: underline; }
+
+.gridNote { color: var(--muted); font-size: 13.5px; margin: 18px 0 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.tile {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+}
+.tile:hover { border-color: var(--accent); }
+.tileLabel { font-weight: 600; font-size: 14px; }
+.tileGo { color: var(--accent); font-weight: 700; font-size: 13px; flex: 0 0 auto; }
+
+.cta {
+  position: sticky; bottom: 0; margin-top: 18px;
+  background: linear-gradient(90deg, #1b2a4a, #163a31);
+  border: 1px solid #2b3a4f; border-radius: 14px; padding: 14px 18px;
+  color: #eaf0f8; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.cta p { margin: 0; font-weight: 600; color: inherit; }
+.cta strong { color: #fff; }
+
+/* static sections */
+.section h2 { font-size: 20px; margin: 0 0 12px; }
+.section ol, .section ul { margin: 0; padding-left: 20px; }
+.section li { margin: 7px 0; color: var(--text); line-height: 1.5; }
+.section a { color: var(--accent); font-weight: 600; }
+.section p { color: var(--muted); line-height: 1.65; margin: 0; }
+.faq { margin-top: 8px; }
+.faq details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.faq summary { cursor: pointer; font-weight: 600; }
+.faq p { color: var(--muted); margin: 8px 0 0; }
+.footer { color: var(--muted); font-size: 13px; text-align: center; padding: 34px 0 50px; }

@@ -97,6 +97,7 @@ export default function Page() {
             <li><a href="/tools/pdf-resume-to-website">PDF Resume → Website Converter</a></li>
             <li><a href="/tools/linkedin-url-customizer">LinkedIn URL Customizer</a></li>
             <li><a href="/tools/portfolio-about-me-generator">Portfolio About Me Generator</a></li>
+            <li><a href="/tools/portfolio-handle-checker">Portfolio Handle Checker</a></li>
           </ul>
         </section>
 
