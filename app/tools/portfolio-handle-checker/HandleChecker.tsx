@@ -7,7 +7,7 @@ import NextSteps from "../../NextSteps";
 import styles from "./handle.module.css";
 
 const TOOL_SLUG = "portfolio-handle-checker";
-const SAMPLE = "jordanrivera";
+const SAMPLE = "octocat"; // GitHub's official demo account — not a real individual
 
 type DataLayer = Array<Record<string, unknown>>;
 function track(event: string, props: Record<string, unknown> = {}) {

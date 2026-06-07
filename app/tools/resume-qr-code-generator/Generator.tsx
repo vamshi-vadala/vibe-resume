@@ -8,7 +8,7 @@ import styles from "./generator.module.css";
 
 const TOOL_SLUG = "resume-qr-code-generator";
 const SIGNUP = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
-const SAMPLE = "linkedin.com/in/jordan-rivera";
+const SAMPLE = "viberesume.in"; // our own domain — never a third party's profile
 
 const COLORS = [
   { id: "ink", label: "Ink", dark: "#0b0d10" },

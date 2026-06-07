@@ -10,7 +10,7 @@ export type LinkKind = "github" | "linkedin" | "website" | "stackoverflow" | "tw
 
 export interface DevLink {
   kind: LinkKind;
-  label: string; // human label, e.g. "github.com/jane"
+  label: string; // human label, e.g. "github.com/octocat"
   url: string;   // absolute https URL
 }
 export interface DevProfile {
@@ -139,7 +139,7 @@ const LINK_PATTERNS: Array<{ kind: LinkKind; re: RegExp }> = [
   { kind: "devpost", re: /devpost\.com\/[A-Za-z0-9-]+/i },
 ];
 // A personal site: a bare domain on common dev TLDs, not one of the known hosts.
-const WEBSITE = /\b((?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(?:dev|io|me|app|tech|codes|page))\b(\/\S*)?/i;
+const WEBSITE = /\b((?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(?:com|dev|io|me|app|tech|codes|page))\b(\/\S*)?/gi;
 const KNOWN_HOST = /github|linkedin|gitlab|stackoverflow|twitter|x\.com|devpost|vercel\.app|netlify\.app/i;
 
 function absolute(u: string): string {
@@ -157,9 +157,11 @@ export function detectLinks(text: string): DevLink[] {
       links.push({ kind, label: m[0].replace(/^https?:\/\//i, ""), url: absolute(m[0]) });
     }
   }
-  const w = text.match(WEBSITE);
-  if (w && !KNOWN_HOST.test(w[0])) {
-    links.push({ kind: "website", label: w[0].replace(/^https?:\/\//i, ""), url: absolute(w[0]) });
+  for (const w of text.matchAll(WEBSITE)) {
+    if (!KNOWN_HOST.test(w[0])) {
+      links.push({ kind: "website", label: w[1].replace(/^https?:\/\//i, ""), url: absolute(w[1]) });
+      break;
+    }
   }
   return links;
 }
@@ -198,7 +200,7 @@ export function analyzeDevResume(input: string): DevProfile {
 
 export const SAMPLE_DEV_RESUME = `Alex Rivera
 Senior Software Engineer
-alex@example.com  •  github.com/alexrivera  •  linkedin.com/in/alexrivera  •  alexrivera.dev
+alex@example.com  •  github.com/octocat  •  linkedin.com/in/octocat  •  example.com
 
 Summary
 Full-stack engineer who ships. I build fast, accessible products and love
@@ -220,6 +222,6 @@ Built a real-time metrics pipeline in Go processing 2M events/sec.
 Shipped the React component library used across 30+ internal apps.
 
 Projects
-github.com/alexrivera/ratelimit-go — a tiny, allocation-free rate limiter
-github.com/alexrivera/portfolio — this site, built with Next.js + Tailwind
+github.com/octocat/ratelimit-go — a tiny, allocation-free rate limiter
+github.com/octocat/portfolio — this site, built with Next.js + Tailwind
 `;

@@ -97,7 +97,7 @@ export function grade(score: number): { label: string; tone: IssueLevel } {
 }
 
 export const SAMPLE_RESUME = `JANE DOE  •  Senior Product Designer
-San Francisco, CA | jane@email.com | (415) 555-0192
+San Francisco, CA | jane@example.com | (415) 555-0192
 
 EXPERIENCE
 ●  Acme Corp — Lead Designer        2021–Present

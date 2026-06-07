@@ -9,7 +9,9 @@ import styles from "./converter.module.css";
 
 const TOOL_SLUG = "github-to-portfolio";
 const SIGNUP = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
-const SAMPLE_USER = "sindresorhus";
+// octocat is GitHub's official demo/mascot account — safe to showcase (not a
+// private individual). The tool fetches real public API data for it.
+const SAMPLE_USER = "octocat";
 
 type DataLayer = Array<Record<string, unknown>>;
 function track(event: string, props: Record<string, unknown> = {}) {

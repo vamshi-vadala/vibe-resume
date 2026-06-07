@@ -440,7 +440,7 @@ export function parseResume(input: string | TextLine[]): ResumeData {
 /** Demo resume text so "Try a sample" works with no upload (and e2e needs no fixture). */
 export const SAMPLE_RESUME_TEXT = `Jane Doe
 Senior Product Designer
-San Francisco, CA · jane@email.com · (415) 555-0192 · linkedin.com/in/janedoe
+San Francisco, CA · jane@example.com · (415) 555-0192 · linkedin.com/in/jane-doe
 
 Summary
 Product designer with 8+ years shipping consumer and B2B products end to end.

@@ -21,8 +21,8 @@ test.describe("resume qr code generator", () => {
 
     // an actual SVG QR is rendered, on a white frame, with an accessible label
     await expect(page.locator("#result [class*=qrFrame] svg")).toBeVisible();
-    await expect(page.getByRole("img", { name: /QR code linking to https:\/\/linkedin\.com\/in\/jordan-rivera/i })).toBeVisible();
-    await expect(page.locator("#result").getByRole("link", { name: /linkedin\.com\/in\/jordan-rivera/i })).toBeVisible();
+    await expect(page.getByRole("img", { name: /QR code linking to https:\/\/viberesume\.in/i })).toBeVisible();
+    await expect(page.locator("#result").getByRole("link", { name: /viberesume\.in/i })).toBeVisible();
   });
 
   test("changing color re-renders the QR in that color", async ({ page }) => {

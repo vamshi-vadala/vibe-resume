@@ -30,7 +30,7 @@ test.describe("portfolio handle checker", () => {
     await expect(page.locator("#result").getByRole("link", { name: /linkedin check/i })).toBeVisible();
     await expect(page.locator("#result").getByRole("link", { name: /x \(twitter\)/i })).toBeVisible();
     // claim CTA references the handle
-    await expect(page.getByRole("button", { name: /claim @jordanrivera/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /claim @octocat/i })).toBeVisible();
   });
 
   test("a taken GitHub username reads as taken", async ({ page }) => {

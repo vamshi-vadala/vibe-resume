@@ -39,17 +39,17 @@ test("ambiguous short terms (Go, R) require exact case", () => {
 
 test("separates a GitHub profile from repo links", () => {
   const { githubUrl, repos } = detectGitHub(
-    "Find me at github.com/jane and github.com/jane/cool-repo, github.com/acme/lib"
+    "Find me at github.com/octocat and github.com/octocat/cool-repo, github.com/acme/lib"
   );
-  assert.equal(githubUrl, "https://github.com/jane");
+  assert.equal(githubUrl, "https://github.com/octocat");
   assert.equal(repos.length, 2);
-  assert.deepEqual(repos[0], { owner: "jane", name: "cool-repo", url: "https://github.com/jane/cool-repo" });
+  assert.deepEqual(repos[0], { owner: "octocat", name: "cool-repo", url: "https://github.com/octocat/cool-repo" });
   assert.equal(repos[1].owner, "acme");
 });
 
 test("infers the profile from a repo owner when no bare profile link exists", () => {
-  const { githubUrl, repos } = detectGitHub("see github.com/jane/proj for the code");
-  assert.equal(githubUrl, "https://github.com/jane");
+  const { githubUrl, repos } = detectGitHub("see github.com/octocat/proj for the code");
+  assert.equal(githubUrl, "https://github.com/octocat");
   assert.equal(repos.length, 1);
 });
 
@@ -62,18 +62,18 @@ test("no GitHub anywhere yields null profile and empty repos", () => {
 
 test("collects every distinct GitHub profile, not just the first", () => {
   const { githubUrl, profiles } = detectGitHub(
-    "github.com/alexrivera and github.com/vamshi-vadala/ plus github.com/alexrivera/portfolio"
+    "github.com/devuser-one and github.com/devuser-two/ plus github.com/devuser-one/portfolio"
   );
-  assert.deepEqual(profiles, ["alexrivera", "vamshi-vadala"], "both profiles, de-duped");
-  assert.equal(githubUrl, "https://github.com/alexrivera", "first is the hero profile");
+  assert.deepEqual(profiles, ["devuser-one", "devuser-two"], "both profiles, de-duped");
+  assert.equal(githubUrl, "https://github.com/devuser-one", "first is the hero profile");
 });
 
 // ---- detectLinks ---------------------------------------------------------
 
 test("collects linkedin and a personal .dev site, ignoring known hosts", () => {
-  const links = detectLinks("linkedin.com/in/jane-doe and my site jane.dev plus github.com/jane");
-  assert.ok(links.some((l) => l.kind === "linkedin" && l.url === "https://linkedin.com/in/jane-doe"));
-  assert.ok(links.some((l) => l.kind === "website" && l.url === "https://jane.dev"));
+  const links = detectLinks("linkedin.com/in/example-user and my site example.dev plus github.com/octocat");
+  assert.ok(links.some((l) => l.kind === "linkedin" && l.url === "https://linkedin.com/in/example-user"));
+  assert.ok(links.some((l) => l.kind === "website" && l.url === "https://example.dev"));
   assert.ok(!links.some((l) => l.kind === "website" && l.label.includes("github")), "github not treated as website");
 });
 
@@ -84,13 +84,13 @@ test("the built-in sample produces a complete profile", () => {
   assert.equal(p.empty, false);
   assert.equal(p.name, "Alex Rivera");
   assert.equal(p.headline, "Senior Software Engineer");
-  assert.equal(p.githubUrl, "https://github.com/alexrivera");
-  assert.deepEqual(p.profiles, ["alexrivera"]);
+  assert.equal(p.githubUrl, "https://github.com/octocat");
+  assert.deepEqual(p.profiles, ["octocat"]);
   assert.ok(p.stack.includes("TypeScript") && p.stack.includes("Go") && p.stack.includes("Kubernetes"));
   assert.equal(p.repos.length, 2);
   assert.ok(p.repos.some((r) => r.name === "ratelimit-go"));
   assert.ok(p.links.some((l) => l.kind === "linkedin"));
-  assert.ok(p.links.some((l) => l.kind === "website" && l.label === "alexrivera.dev"));
+  assert.ok(p.links.some((l) => l.kind === "website" && l.label === "example.com"));
   // experience must be carried through, not dropped
   assert.equal(p.experience.length, 2);
   assert.equal(p.experience[0].header, "Senior Software Engineer — Stripe");
