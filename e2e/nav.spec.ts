@@ -1,8 +1,21 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 // The global header + footer appear on every page. These check a visitor can
 // always get home and hop between tools from anywhere.
+
+/** Open the Tools menu, retrying the click until it actually opens — Next's dev
+ *  server (what CI runs) can attach the React onClick a beat after the button is
+ *  clickable, so a single click can land before hydration and no-op. */
+async function openToolsMenu(page: Page) {
+  const toggle = page.getByRole("button", { name: /^tools/i });
+  await expect(toggle).toBeVisible();
+  await expect(async () => {
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+    await expect(page.getByRole("menu")).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10000 });
+  return toggle;
+}
 
 test.describe("global navigation", () => {
   test("header brand returns to the landing page from a tool", async ({ page }) => {
@@ -15,13 +28,10 @@ test.describe("global navigation", () => {
   test("tools menu opens and navigates across tools", async ({ page }) => {
     await page.goto("/tools/pdf-resume-to-website");
 
-    const toggle = page.getByRole("button", { name: /^tools/i });
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("button", { name: /^tools/i })).toHaveAttribute("aria-expanded", "false");
+    await openToolsMenu(page);
 
     const menu = page.getByRole("menu");
-    await expect(menu).toBeVisible();
     await expect(menu.getByRole("menuitem")).toHaveCount(10);
 
     await menu.getByRole("menuitem", { name: /theme picker/i }).click();
@@ -30,9 +40,7 @@ test.describe("global navigation", () => {
 
   test("menu closes on Escape", async ({ page }) => {
     await page.goto("/");
-    const toggle = page.getByRole("button", { name: /^tools/i });
-    await toggle.click();
-    await expect(page.getByRole("menu")).toBeVisible();
+    await openToolsMenu(page);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu")).toHaveCount(0);
   });
@@ -47,8 +55,7 @@ test.describe("global navigation", () => {
 
   test("no axe color-contrast violations in the chrome", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: /^tools/i }).click();
-    await expect(page.getByRole("menu")).toBeVisible();
+    await openToolsMenu(page);
 
     const results = await new AxeBuilder({ page })
       .include("header")
