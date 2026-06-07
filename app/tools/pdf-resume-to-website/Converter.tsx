@@ -125,6 +125,7 @@ export default function Converter() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [themeId, setThemeId] = useState("");
+  const [dragging, setDragging] = useState(false);
 
   // The Theme Picker tool hands off a look via ?theme=<id>; apply it if valid.
   useEffect(() => {
@@ -146,10 +147,7 @@ export default function Converter() {
     );
   }
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    e.target.value = ""; // allow re-uploading the same file
+  async function processFile(f: File) {
     setError("");
     setLoading(true);
     track("tool_started");
@@ -175,6 +173,22 @@ export default function Converter() {
     }
   }
 
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    e.target.value = ""; // allow re-uploading the same file
+    processFile(f);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (!f) return;
+    if (f.type !== "application/pdf") { setError("That's not a PDF — drop a .pdf file."); return; }
+    processFile(f);
+  }
+
   function sample() {
     track("tool_started", { source: "sample" });
     const parsed = parseResume(SAMPLE_RESUME_TEXT);
@@ -197,18 +211,28 @@ export default function Converter() {
         </p>
       </header>
 
-      {/* INPUT — one required action */}
+      {/* INPUT — one unmistakable action: drop or browse for a PDF */}
       <section className={styles.card}>
-        <label className={styles.label} htmlFor="pdf">Upload your resume (PDF)</label>
-        <div className={styles.row}>
-          <input
-            id="pdf" type="file" accept="application/pdf"
-            className={styles.file} onChange={onFile} disabled={loading}
-          />
-          <button className={`${styles.btn} ${styles.ghost}`} onClick={sample} disabled={loading}>
-            Try a sample
-          </button>
-          {loading && <span className={styles.loading}>Reading your PDF…</span>}
+        <label
+          className={styles.dropzone}
+          htmlFor="pdf"
+          data-dragging={dragging || undefined}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+        >
+          <svg className={styles.dropIcon} width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 15V4M8 8l4-4 4 4" />
+            <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+          </svg>
+          <span className={styles.dropTitle}>{loading ? "Reading your PDF…" : "Drop your PDF resume here"}</span>
+          <span className={styles.dropHint}>or <strong>click to browse</strong> — your file never leaves your browser</span>
+          <input id="pdf" type="file" accept="application/pdf" className={styles.fileHidden} onChange={onFile} disabled={loading} />
+        </label>
+
+        <div className={styles.sampleRow}>
+          <span className={styles.sampleText}>No PDF handy?</span>
+          <button className={`${styles.btn} ${styles.ghost}`} onClick={sample} disabled={loading}>Try a sample</button>
         </div>
         {error && <p className={styles.error} role="alert">{error}</p>}
       </section>

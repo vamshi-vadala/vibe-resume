@@ -13,9 +13,24 @@
 .primary { background: var(--accent); color: var(--on-accent); }
 .ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
 .accent { background: var(--accent2); color: var(--on-accent2); }
-.file { color: var(--muted); font-size: 13px; }
-.loading { color: var(--muted); font-size: 14px; }
 .error { color: var(--bad); font-size: 14px; margin: 12px 0 0; }
+
+/* prominent, directive upload affordance (drop or click) */
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 34px 20px; border: 2px dashed var(--line); border-radius: 14px;
+  background: var(--panel2); cursor: pointer; text-align: center;
+  transition: border-color .15s ease;
+}
+.dropzone:hover, .dropzone:focus-within, .dropzone[data-dragging] { border-color: var(--accent); }
+.dropzone:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dropIcon { color: var(--accent); }
+.dropTitle { font-weight: 700; font-size: 17px; color: var(--text); }
+.dropHint { color: var(--muted); font-size: 13.5px; }
+.dropHint strong { color: var(--accent); }
+.fileHidden { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sampleRow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.sampleText { color: var(--muted); font-size: 14px; }
 
 @media (max-width: 760px) { .hero h1 { font-size: 27px; } }
 

@@ -7,8 +7,6 @@ import { TOOLS } from "@/lib/tools.ts";
 import ThemeToggle from "./ThemeToggle";
 import styles from "./chrome.module.css";
 
-const SIGNUP = "/signup?utm_source=nav&utm_campaign=header";
-
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -70,8 +68,6 @@ export default function SiteHeader() {
               </div>
             )}
           </div>
-
-          <Link href={SIGNUP} className={styles.cta}>Get started</Link>
         </nav>
       </div>
     </header>
