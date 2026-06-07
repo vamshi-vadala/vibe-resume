@@ -41,7 +41,7 @@ test.describe("linkedin url customizer", () => {
     expect(isTransparent(slugColor), `slug color unresolved: ${slugColor}`).toBe(false);
 
     // primary CTA references the produced artifact
-    await expect(page.getByRole("button", { name: /claim vibe\.resume\/jordan-rivera/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /claim viberesume\.in\/jordan-rivera/i })).toBeVisible();
 
     // sticky band stays light on its dark gradient
     const bandText = await colorOf(page, ":text('real personal site')");

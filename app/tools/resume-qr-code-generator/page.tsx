@@ -37,7 +37,7 @@ const FAQ = [
   },
   {
     q: "Is this tool free?",
-    a: "Completely free, with no signup to generate and download your QR code. You can optionally claim a permanent vibe.resume URL so your code always points to an address you own.",
+    a: "Completely free, with no signup to generate and download your QR code. You can optionally claim a permanent viberesume.in URL so your code always points to an address you own.",
   },
 ];
 

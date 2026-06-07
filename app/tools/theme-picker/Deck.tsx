@@ -144,7 +144,7 @@ export default function Deck() {
           <div className={styles.browser}>
             <div className={styles.browserBar}>
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
-              <span className={styles.url}>vibe.resume/jordan</span>
+              <span className={styles.url}>viberesume.in/jordan</span>
             </div>
             <ThemePreview theme={chosenTheme} large />
           </div>

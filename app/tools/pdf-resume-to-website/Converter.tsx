@@ -258,7 +258,7 @@ export default function Converter() {
           <div className={styles.browser}>
             <div className={styles.browserBar}>
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
-              <span className={styles.url}>vibe.resume/{slug(data.name)}</span>
+              <span className={styles.url}>viberesume.in/{slug(data.name)}</span>
             </div>
             <ResumeSite data={data} photoUrl={photoUrl} themeId={themeId} />
           </div>

@@ -143,7 +143,7 @@ export default function Customizer() {
                   className={`${styles.btn} ${styles.accent} ${styles.btnLg}`}
                   onClick={() => goSignup("result_primary", best)}
                 >
-                  Claim {best ? `vibe.resume/${best}` : "your own URL"} →
+                  Claim {best ? `viberesume.in/${best}` : "your own URL"} →
                 </button>
               </div>
 

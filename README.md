@@ -208,5 +208,5 @@ Server-side only — **never** prefix these with `NEXT_PUBLIC_`.
 
 All 10 cluster tools are shipped. What's next isn't more tools:
 
-1. **The "publish" epic** — the real product behind every "Publish" CTA: accounts/auth + a database + dynamic hosting for `{name}` URLs + slug claiming (ties into the Handle Checker). It needs a **real domain** — note that `.resume` is *not* a registerable TLD, so the `vibe.resume/{slug}` shown in previews is branding only.
+1. **The "publish" epic** — the real product behind every "Publish" CTA: accounts/auth + a database + dynamic hosting for `viberesume.in/{name}` URLs + slug claiming (ties into the Handle Checker). The real domain is now **`viberesume.in`** (live on Vercel); the `{name}` URLs shown in previews are still aspirational until the hosting is built.
 2. **SEO & distribution** — submit the sitemap to GSC + IndexNow, internal-link/word-count audits, and per-launch distribution.

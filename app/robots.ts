@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = "https://vibe-resumes.vercel.app";
+const BASE = "https://viberesume.in";
 
 export default function robots(): MetadataRoute.Robots {
   return {

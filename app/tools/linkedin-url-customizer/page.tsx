@@ -37,7 +37,7 @@ const FAQ = [
   },
   {
     q: "Is this tool free?",
-    a: "Completely free, with no signup to generate and copy URLs. You can optionally claim a matching vibe.resume/yourname for a real personal website.",
+    a: "Completely free, with no signup to generate and copy URLs. You can optionally claim a matching viberesume.in/yourname for a real personal website.",
   },
 ];
 

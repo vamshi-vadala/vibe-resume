@@ -82,5 +82,5 @@ test("garbage input yields no suggestions", () => {
 
 test("url helpers build full profile URLs", () => {
   assert.equal(linkedinUrl("jordan-rivera"), "https://www.linkedin.com/in/jordan-rivera");
-  assert.equal(vibeUrl("jordan-rivera"), "https://vibe.resume/jordan-rivera");
+  assert.equal(vibeUrl("jordan-rivera"), "https://viberesume.in/jordan-rivera");
 });

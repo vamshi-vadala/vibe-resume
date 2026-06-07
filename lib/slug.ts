@@ -8,7 +8,7 @@
 // hyphens only, no leading/trailing hyphen, no doubled hyphens.
 
 const LINKEDIN_BASE = "https://www.linkedin.com/in/";
-const VIBE_BASE = "https://vibe.resume/";
+const VIBE_BASE = "https://viberesume.in/";
 
 // Combining diacritical marks (U+0300–U+036F), left over after NFKD decomposition.
 const DIACRITICS = /[̀-ͯ]/g;

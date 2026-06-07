@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   // Resolves relative OG image + canonical URLs to the production origin
   // (otherwise they fall back to http://localhost:3000 in metadata).
-  metadataBase: new URL("https://vibe-resumes.vercel.app"),
+  metadataBase: new URL("https://viberesume.in"),
   title: "Vibe Resume",
   description: "Free tools to turn your resume and profile into a shareable website.",
 };
