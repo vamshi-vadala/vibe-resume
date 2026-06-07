@@ -32,26 +32,32 @@
 .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line); flex: 0 0 auto; }
 .url { margin-left: 10px; font-size: 12.5px; color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* the generated personal website */
-.site { padding: 32px clamp(20px, 5vw, 44px) 40px; color: var(--text); }
-.siteHero { display: flex; align-items: center; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+/* the generated personal website — reads --t-* theme tokens when a ThemeDeck
+   theme is applied, falling back to the app tokens (identical default look). */
+.site {
+  padding: 32px clamp(20px, 5vw, 44px) 40px;
+  color: var(--t-text, var(--text));
+  background: var(--t-bg, var(--background));
+  font-family: var(--t-font, inherit);
+}
+.siteHero { display: flex; align-items: center; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--t-border, var(--line)); }
 .avatar {
   flex: 0 0 auto; width: 68px; height: 68px; border-radius: 50%;
   display: grid; place-items: center; font-size: 24px; font-weight: 800;
-  background: var(--accent); color: var(--on-accent);
+  background: var(--t-accent, var(--accent)); color: var(--t-on-accent, var(--on-accent));
 }
 .avatarPhoto {
   flex: 0 0 auto; width: 68px; height: 68px; border-radius: 50%;
   object-fit: cover; object-position: top center;
-  border: 2px solid var(--line);
+  border: 2px solid var(--t-border, var(--line));
 }
-.siteName { font-size: 28px; line-height: 1.1; margin: 0; }
-.siteRole { color: var(--accent); font-weight: 600; margin: 4px 0 0; font-size: 16px; }
-.siteContact { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; word-break: break-word; }
+.siteName { font-size: 28px; line-height: 1.1; margin: 0; font-family: var(--t-heading-font, inherit); font-weight: var(--t-heading-weight, 700); }
+.siteRole { color: var(--t-accent, var(--accent)); font-weight: 600; margin: 4px 0 0; font-size: 16px; }
+.siteContact { color: var(--t-muted, var(--muted)); font-size: 13.5px; margin: 8px 0 0; word-break: break-word; }
 
-.siteSection { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.siteSection { padding: 22px 0; border-bottom: 1px solid var(--t-border, var(--line)); }
 .siteSection:last-child { border-bottom: 0; padding-bottom: 0; }
-.siteH2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.siteH2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--t-muted, var(--muted)); margin: 0 0 12px; }
 .siteSummary { font-size: 16px; line-height: 1.6; margin: 0; max-width: 70ch; }
 .siteList { margin: 0; padding-left: 20px; }
 .siteList li { margin: 0 0 8px; line-height: 1.55; }
@@ -62,13 +68,20 @@
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 6px;
 }
 .siteEntryTitle { font-size: 16px; font-weight: 700; }
-.siteEntryMeta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.siteEntryMeta { font-size: 13px; color: var(--t-muted, var(--muted)); white-space: nowrap; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
-  background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  background: var(--t-chip, var(--panel2)); border: var(--t-border-width, 1px) solid var(--t-border, var(--line)); color: var(--t-text, var(--text));
 }
+
+/* theme switcher above the preview */
+.themeBar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.themeBarLabel { font-size: 13px; color: var(--muted); margin-right: 2px; }
+.themeChip { cursor: pointer; border-radius: 9px; padding: 7px 12px; font-weight: 600; font-size: 13.5px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+.themeChip:hover { border-color: var(--accent); }
+.themeChipOn { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
 @media (max-width: 560px) {
   .siteHero { flex-direction: column; text-align: center; align-items: center; }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import posthog from "posthog-js";
 import { analyzeDevResume, SAMPLE_DEV_RESUME, type DevProfile } from "@/lib/devresume.ts";
 import { usernameFromGitHubUrl, topReposFromApi, mergeRepos, type Repo } from "@/lib/github.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "developer-resume-to-portfolio";
@@ -147,6 +148,7 @@ export default function Converter() {
             </button>
           </div>
 
+          <NextSteps from="developer-resume-to-portfolio" />
           <div className={styles.cta}>
             <p>Your portfolio is ready — publish it with your own URL in 1 click.</p>
             <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result")}>

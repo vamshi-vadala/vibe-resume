@@ -5,6 +5,7 @@ import posthog from "posthog-js";
 import {
   generateSlugs, isValidName, linkedinUrl, vibeUrl, type SlugSuggestion,
 } from "@/lib/slug.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./customizer.module.css";
 
 const TOOL_SLUG = "linkedin-url-customizer";
@@ -146,6 +147,7 @@ export default function Customizer() {
                 </button>
               </div>
 
+              <NextSteps from="linkedin-url-customizer" />
               <div className={styles.cta}>
                 <p>Want this as a <strong>real personal site</strong>, not just a LinkedIn slug? Claim your {best ? <code>{vibeUrl(best).replace("https://", "")}</code> : "own URL"} on Vibe Resume.</p>
                 <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result", best)}>

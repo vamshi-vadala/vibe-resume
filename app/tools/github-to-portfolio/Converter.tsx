@@ -4,6 +4,7 @@ import { useState } from "react";
 import posthog from "posthog-js";
 import { normalizeUsername } from "@/lib/github.ts";
 import { buildGhProfile, type GhProfile } from "@/lib/ghportfolio.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "github-to-portfolio";
@@ -157,6 +158,7 @@ export default function Converter() {
             </button>
           </div>
 
+          <NextSteps from="github-to-portfolio" />
           <div className={styles.cta}>
             <p>Your portfolio is ready — publish it with your own URL in 1 click.</p>
             <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result")}>

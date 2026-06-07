@@ -27,7 +27,7 @@ test.describe("portfolio handle checker", () => {
 
     await expect(page.getByText("✓ Available")).toBeVisible();
     // honest "check yourself" links for the platforms we can't query
-    await expect(page.locator("#result").getByRole("link", { name: /linkedin/i })).toBeVisible();
+    await expect(page.locator("#result").getByRole("link", { name: /linkedin check/i })).toBeVisible();
     await expect(page.locator("#result").getByRole("link", { name: /x \(twitter\)/i })).toBeVisible();
     // claim CTA references the handle
     await expect(page.getByRole("button", { name: /claim @jordanrivera/i })).toBeVisible();

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import posthog from "posthog-js";
 import { parseResume, linesFromItems, SAMPLE_RESUME_TEXT, type ResumeData, type PositionedItem, type TextLine } from "@/lib/resume";
+import { THEMES, getTheme, themeStyle } from "@/lib/themes.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "pdf-resume-to-website";
@@ -122,6 +124,18 @@ export default function Converter() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [themeId, setThemeId] = useState("");
+
+  // The Theme Picker tool hands off a look via ?theme=<id>; apply it if valid.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("theme");
+    if (t && THEMES.some((x) => x.id === t)) setThemeId(t);
+  }, []);
+
+  function pickTheme(id: string) {
+    setThemeId(id);
+    track("result_interacted", { action: "theme", theme: id || "default" });
+  }
 
   function show(d: ResumeData, photo = "") {
     setData(d);
@@ -207,13 +221,22 @@ export default function Converter() {
             <span className={styles.resultSub}>Live preview · publish to get your own URL</span>
           </div>
 
+          {/* theme switcher — pre-selected from the Theme Picker's ?theme= handoff */}
+          <div className={styles.themeBar} role="group" aria-label="Preview theme">
+            <span className={styles.themeBarLabel}>Theme</span>
+            <button type="button" className={`${styles.themeChip} ${!themeId ? styles.themeChipOn : ""}`} aria-pressed={!themeId} onClick={() => pickTheme("")}>Default</button>
+            {THEMES.map((t) => (
+              <button key={t.id} type="button" className={`${styles.themeChip} ${themeId === t.id ? styles.themeChipOn : ""}`} aria-pressed={themeId === t.id} onClick={() => pickTheme(t.id)}>{t.name}</button>
+            ))}
+          </div>
+
           {/* a faux browser frame around the generated site */}
           <div className={styles.browser}>
             <div className={styles.browserBar}>
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
               <span className={styles.url}>vibe.resume/{slug(data.name)}</span>
             </div>
-            <ResumeSite data={data} photoUrl={photoUrl} />
+            <ResumeSite data={data} photoUrl={photoUrl} themeId={themeId} />
           </div>
 
           {/* evident primary action */}
@@ -224,6 +247,7 @@ export default function Converter() {
           </div>
 
           {/* sticky CTA — only rendered after a result exists */}
+          <NextSteps from="pdf-resume-to-website" />
           <div className={styles.cta}>
             <p>Your website is ready — publish it with your own URL in 1 click.</p>
             <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result")}>
@@ -237,9 +261,10 @@ export default function Converter() {
 }
 
 /** The generated personal website — a single polished, responsive template. */
-function ResumeSite({ data, photoUrl }: { data: ResumeData; photoUrl: string }) {
+function ResumeSite({ data, photoUrl, themeId }: { data: ResumeData; photoUrl: string; themeId: string }) {
+  const style = themeId ? (themeStyle(getTheme(themeId)) as React.CSSProperties) : undefined;
   return (
-    <article className={styles.site}>
+    <article className={styles.site} style={style}>
       <header className={styles.siteHero}>
         {photoUrl
           ? <img src={photoUrl} alt={data.name} className={styles.avatarPhoto} />

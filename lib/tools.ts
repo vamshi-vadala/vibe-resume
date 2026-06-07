@@ -4,6 +4,12 @@
 
 export type GroupId = "online" | "portfolio" | "brand";
 
+/** Icon key — see app/ToolIcon.tsx. */
+export type IconId =
+  | "pdf" | "github" | "code" | "ats"
+  | "palette" | "pen" | "layout"
+  | "at" | "link" | "qr";
+
 export type Tool = {
   /** Route, e.g. "/tools/theme-picker". */
   href: string;
@@ -15,6 +21,8 @@ export type Tool = {
   desc: string;
   /** Which goal group this tool belongs to on the landing page. */
   group: GroupId;
+  /** Card icon (app/ToolIcon.tsx). */
+  icon: IconId;
 };
 
 /** Goal-based groups, in display order. */
@@ -33,6 +41,7 @@ export const TOOLS: Tool[] = [
     nav: "PDF → Website",
     desc: "Upload a PDF resume and preview it as a clean personal website — in your browser.",
     group: "online",
+    icon: "pdf",
   },
   {
     href: "/tools/github-to-portfolio",
@@ -40,6 +49,7 @@ export const TOOLS: Tool[] = [
     nav: "GitHub → Portfolio",
     desc: "One field: a GitHub username. Out comes a portfolio — bio, top repos and tech stack.",
     group: "online",
+    icon: "github",
   },
   {
     href: "/tools/developer-resume-to-portfolio",
@@ -47,6 +57,7 @@ export const TOOLS: Tool[] = [
     nav: "Resume → Portfolio",
     desc: "Flip a dev resume into a portfolio — your GitHub, projects and tech stack, auto-detected.",
     group: "online",
+    icon: "code",
   },
   {
     href: "/tools/ats-plain-text-converter",
@@ -54,6 +65,7 @@ export const TOOLS: Tool[] = [
     nav: "ATS Converter",
     desc: "See your resume the way an ATS robot reads it, with a 0–100 score and fixes.",
     group: "online",
+    icon: "ats",
   },
 
   // — Make your portfolio shine —
@@ -63,6 +75,7 @@ export const TOOLS: Tool[] = [
     nav: "Theme Picker",
     desc: "Swipe through portfolio themes like a deck of cards and keep the look you love.",
     group: "portfolio",
+    icon: "palette",
   },
   {
     href: "/tools/portfolio-about-me-generator",
@@ -70,6 +83,7 @@ export const TOOLS: Tool[] = [
     nav: "About Me",
     desc: "Enter your role, pick a tone, and copy a polished portfolio “about me” in seconds.",
     group: "portfolio",
+    icon: "pen",
   },
   {
     href: "/tools/case-study-template",
@@ -77,6 +91,7 @@ export const TOOLS: Tool[] = [
     nav: "Case Study",
     desc: "Turn a project into a structured, copy-paste portfolio case study with Markdown export.",
     group: "portfolio",
+    icon: "layout",
   },
 
   // — Own your personal brand —
@@ -86,6 +101,7 @@ export const TOOLS: Tool[] = [
     nav: "Handle Checker",
     desc: "Check where @yourhandle is still free across the web and claim your portfolio URL.",
     group: "brand",
+    icon: "at",
   },
   {
     href: "/tools/linkedin-url-customizer",
@@ -93,6 +109,7 @@ export const TOOLS: Tool[] = [
     nav: "LinkedIn URL",
     desc: "Turn your name into clean, professional custom profile URLs you can claim.",
     group: "brand",
+    icon: "link",
   },
   {
     href: "/tools/resume-qr-code-generator",
@@ -100,5 +117,6 @@ export const TOOLS: Tool[] = [
     nav: "Resume QR",
     desc: "Turn your portfolio or resume link into a downloadable QR code — PNG or SVG.",
     group: "brand",
+    icon: "qr",
   },
 ];

@@ -5,6 +5,7 @@ import posthog from "posthog-js";
 import {
   generateAbout, isValidRole, TONES, type Tone, type AboutVariant,
 } from "@/lib/aboutme.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./generator.module.css";
 
 const TOOL_SLUG = "portfolio-about-me-generator";
@@ -192,6 +193,7 @@ export default function Generator() {
             <span className={styles.aiGo} aria-hidden>→</span>
           </button>
 
+          <NextSteps from="portfolio-about-me-generator" />
           <div className={styles.cta}>
             <p>Turn this into a real <strong>portfolio site</strong> with your own URL on Vibe Resume.</p>
             <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>

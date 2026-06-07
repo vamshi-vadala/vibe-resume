@@ -3,6 +3,7 @@
 import { useState } from "react";
 import posthog from "posthog-js";
 import { analyzeResume, grade, recommendations, SAMPLE_RESUME, TARGET_SCORE, type AtsResult } from "@/lib/ats";
+import NextSteps from "../../NextSteps";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "ats-plain-text-converter";
@@ -170,6 +171,7 @@ export default function Converter() {
           </div>
 
           {/* sticky CTA — only rendered after a result exists */}
+          <NextSteps from="ats-plain-text-converter" />
           <div className={styles.cta}>
             <p>Your cleaned resume is ready — publish it as a live page in 1 click.</p>
             <button

@@ -21,6 +21,15 @@ test.describe("landing page", () => {
     await expect(page).toHaveURL(/\/tools\/portfolio-handle-checker$/);
   });
 
+  test("shows the how-it-works steps and trust signals", async ({ page }) => {
+    await page.goto("/");
+    for (const t of ["Pick a tool", "Paste or upload", "Copy, download or publish"]) {
+      await expect(page.getByText(t, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText(/100% in your browser/)).toBeVisible();
+    await expect(page.getByRole("link", { name: /open source/i })).toBeVisible();
+  });
+
   test("no axe color-contrast violations on the landing page", async ({ page }) => {
     await page.goto("/");
     const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();

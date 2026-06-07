@@ -3,6 +3,7 @@
 import { useState } from "react";
 import posthog from "posthog-js";
 import { normalizeHandle, isValidHandle, buildTargets, githubApiUrl, type Target } from "@/lib/handle.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./handle.module.css";
 
 const TOOL_SLUG = "portfolio-handle-checker";
@@ -139,6 +140,7 @@ export default function HandleChecker() {
           </div>
 
           {/* claim CTA — the Vibe Resume namespace is new, so it's honestly yours to take */}
+          <NextSteps from="portfolio-handle-checker" />
           <div className={styles.cta}>
             <p>Lock in <strong>{handle}</strong> as your portfolio URL on Vibe Resume before it’s taken.</p>
             <button className={`${styles.btn} ${styles.accent}`} onClick={() => claim("sticky_result")}>

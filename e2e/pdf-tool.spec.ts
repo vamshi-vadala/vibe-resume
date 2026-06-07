@@ -57,4 +57,33 @@ test.describe("PDF→website tool theming", () => {
     }));
     expect(violations, JSON.stringify(violations, null, 2)).toEqual([]);
   });
+
+  const THEME_NAMES = ["Midnight Pro", "Paper", "Terminal", "Sunset", "Pastel", "Brutalist"];
+  const siteLum = (page: Page) =>
+    page.locator("#result article").evaluate((el) => getComputedStyle(el).backgroundColor).then(luminance);
+
+  test("the ?theme= handoff pre-applies a theme, and the switcher re-skins live", async ({ page }) => {
+    await page.goto(`${URL}?theme=terminal`); // Theme Picker handoff
+    await page.getByRole("button", { name: /try a sample/i }).click();
+    await expect(page.locator("#result")).toBeVisible();
+
+    await expect.poll(() => siteLum(page), { message: "terminal should be dark" }).toBeLessThan(0.12);
+    await page.getByRole("button", { name: "Paper", exact: true }).click();
+    await expect.poll(() => siteLum(page), { message: "paper should be light" }).toBeGreaterThan(0.85);
+    await page.getByRole("button", { name: "Default", exact: true }).click();
+  });
+
+  test("no axe color-contrast violations in any preview theme", async ({ page }) => {
+    await page.goto(URL);
+    await page.getByRole("button", { name: /try a sample/i }).click();
+    await expect(page.locator("#result")).toBeVisible();
+
+    for (const name of ["Default", ...THEME_NAMES]) {
+      await page.getByRole("button", { name, exact: true }).click();
+      await page.addStyleTag({ content: "*,*::before,*::after{transition:none !important}" });
+      const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+      const violations = results.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target.join(" ")) }));
+      expect(violations, `theme "${name}": ${JSON.stringify(violations, null, 2)}`).toEqual([]);
+    }
+  });
 });

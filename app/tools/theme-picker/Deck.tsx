@@ -5,6 +5,7 @@ import posthog from "posthog-js";
 import {
   THEMES, getTheme, nextIndex, prevIndex, themeStyle, SAMPLE, type Theme,
 } from "@/lib/themes.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./deck.module.css";
 
 const TOOL_SLUG = "theme-picker";
@@ -163,6 +164,7 @@ export default function Deck() {
             </button>
           </div>
 
+          <NextSteps from="theme-picker" />
           <div className={styles.cta}>
             <p>Love this look? Publish your resume with the <strong>{chosenTheme.name}</strong> theme on Vibe Resume.</p>
             <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>

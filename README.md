@@ -48,7 +48,7 @@ Shows a resume the way an Applicant Tracking System parses it, side by side with
 A Tinder-style swipe deck of dev-portfolio themes — skip what you don't like, keep the look you do.
 
 - **`lib/themes.ts`** (pure, tested) — 6 opinionated themes (midnight / paper / terminal / sunset / pastel / brutalist) as **scoped `--t-*` token sets** so a theme never leaks into the app's own tokens, a fixed sample portfolio, and wrap-around deck navigation.
-- Keep a theme → the result hands off to the PDF tool with `?theme={id}`. Every theme is hand-tuned to WCAG AA; the e2e runs axe across all six.
+- Keep a theme → the result hands off to the PDF tool with `?theme={id}`, **which actually applies it**: the PDF preview reads the same `--t-*` tokens (with app-token fallbacks) and has its own theme switcher. Every theme is hand-tuned to WCAG AA; both tools' e2e run axe across all six.
 
 #### Portfolio About Me Generator (AboutMeAI) — `/tools/portfolio-about-me-generator`
 
@@ -94,7 +94,8 @@ Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcomi
 
 ## Platform foundations
 
-- **Goal-grouped landing page** — the 10 tools are grouped by intent ("Get your resume online" / "Make your portfolio shine" / "Own your personal brand") from `lib/tools.ts` (a `group` field + `TOOL_GROUPS`).
+- **Goal-grouped landing page** — the 10 tools are grouped by intent ("Get your resume online" / "Make your portfolio shine" / "Own your personal brand") from `lib/tools.ts` (a `group` field + `TOOL_GROUPS`). Each card has a monoline `ToolIcon`; the page leads with a 3-step "how it works" strip and honest trust signals (in-browser / no-signup / open-source).
+- **Cross-tool funnel** — every tool's result ends with a contextual `NextSteps` block ("Next step" chips) that nudges the visitor to a logical follow-up tool instead of dead-ending.
 - **Global navigation** — a sticky `SiteHeader` (wordmark → home, accessible Tools dropdown, theme toggle, Get-started CTA) and a `SiteFooter` link mesh, both reading the **single tool registry** `lib/tools.ts` so they can't drift. Add a new tool there and it appears everywhere.
 - **System / Light / Dark theme toggle** — a 3-state header control (`ThemeToggle`) persisted to `localStorage`. `:root` is light, `:root[data-theme="dark"]` is explicit dark, and `prefers-color-scheme` only applies when no manual choice is set (so System follows the OS but a pick always wins). A blocking inline script in `layout.tsx` applies the saved theme **before first paint** (no flash of the wrong theme).
 - **SEO template** — exact-match `<h1>`, unique keyword-rich meta description per page, `/tools/{kebab-keyword}` slug, OpenGraph (+ per-tool `opengraph-image`), canonical, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Site-wide: `metadataBase` (so OG/canonical URLs resolve to the production origin), `app/sitemap.ts`, `app/robots.ts`, and `app/manifest.ts` + `app/icon.svg`. Tools cross-link siblings; the footer links all ten from every page.

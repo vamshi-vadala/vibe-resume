@@ -3,6 +3,7 @@
 import { useState } from "react";
 import posthog from "posthog-js";
 import { generateCaseStudy, toMarkdown, isValidTitle, type CaseStudy } from "@/lib/casestudy.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./casecrafter.module.css";
 
 const TOOL_SLUG = "case-study-template";
@@ -194,6 +195,7 @@ export default function CaseCrafter() {
             <span className={styles.aiGo} aria-hidden>→</span>
           </button>
 
+          <NextSteps from="case-study-template" />
           <div className={styles.cta}>
             <p>Publish this as a <strong>portfolio case-study page</strong> with your own URL on Vibe Resume.</p>
             <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>Publish on Vibe Resume</button>

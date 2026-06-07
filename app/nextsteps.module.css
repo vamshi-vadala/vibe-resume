@@ -1,0 +1,10 @@
+.wrap { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.label { display: block; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.item {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 14px; border-radius: 10px; font-weight: 600; font-size: 14px;
+  background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+}
+.item:hover { border-color: var(--accent); color: var(--accent); }
+.icon { display: inline-flex; color: var(--accent); }

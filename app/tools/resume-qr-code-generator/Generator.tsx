@@ -3,6 +3,7 @@
 import { useState } from "react";
 import posthog from "posthog-js";
 import { normalizeUrl, isValidQrInput, qrFilename } from "@/lib/qr.ts";
+import NextSteps from "../../NextSteps";
 import styles from "./generator.module.css";
 
 const TOOL_SLUG = "resume-qr-code-generator";
@@ -168,6 +169,7 @@ export default function Generator() {
             </div>
           </div>
 
+          <NextSteps from="resume-qr-code-generator" />
           <div className={styles.cta}>
             <p>Make your QR point to <strong>one URL you own</strong> — claim your vibe.resume link so it never breaks.</p>
             <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>
