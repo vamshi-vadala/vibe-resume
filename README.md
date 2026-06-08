@@ -2,9 +2,9 @@
 
 A suite of free, SEO-driven micro-tools that turn resumes and profiles into shareable web pages — each tool an indexed landing page that funnels to the Vibe Resume product.
 
-This repo is the implementation of that programmatic-SEO plan. **All 10 tools in the cluster are live**, plus a goal-grouped landing page, global navigation, a System/Light/Dark theme toggle, an email waitlist with a real backend, and the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) every tool shares.
+This repo is the implementation of that programmatic-SEO plan. **All 10 tools in the cluster are live**, plus a goal-grouped landing page, global navigation, a System/Light/Dark theme toggle, magic-link sign-in with handle reservations, and the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) every tool shares.
 
-Everything runs **client-side and static** — the only server function is the waitlist route.
+Every **tool** runs client-side and static. The publish surface adds a thin server layer: Supabase Auth + Postgres for sign-in and handle reservations, and three small route handlers (`/auth/callback`, `/api/slugs/[slug]`, `/claim/[slug]`) plus two dynamic server pages (`/signup`, `/account`).
 
 ## The tools
 
@@ -55,7 +55,7 @@ A Tinder-style swipe deck of dev-portfolio themes — skip what you don't like, 
 Enter your role, pick a tone, and copy a polished "about me" in seconds.
 
 - **`lib/aboutme.ts`** (pure, tested) — a deterministic, tone-driven template engine producing a one-liner, an about paragraph, a longer story, and a third-person bio, shaped by tone (Professional / Friendly / Confident / Creative). Switching tone rewrites instantly.
-- It **structures, never fabricates** — the free engine is honest; an "✨ Make it sharper with AI" CTA gates a future AI rewrite behind the waitlist.
+- It **structures, never fabricates** — the free engine is honest; an "✨ Make it sharper with AI" CTA is reserved for a planned AI-rewrite upgrade (not built yet).
 
 #### Case Study Template (CaseCrafter) — `/tools/case-study-template`
 
@@ -85,12 +85,21 @@ Turn your portfolio/resume link into a downloadable QR code.
 - **`lib/qr.ts`** (pure, tested) — `normalizeUrl` (bare domain → `https://`), validation, filename. The QR itself uses the [`qrcode`](https://www.npmjs.com/package/qrcode) library, **dynamic-imported** in the handlers so it never runs during SSR or bloats the initial bundle.
 - SVG QR on an **always-white frame** (scans in any site theme), color presets that re-render instantly, and **PNG + SVG** downloads.
 
-### Email waitlist — `/signup` + `/api/waitlist`
+### Account + handle claim — `/signup` + `/account` + `/api/slugs/[slug]` (Phase 1 of the publish epic)
 
-Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcoming publish-your-resume feature.
+The real Phase-1 surface behind every "Publish" CTA: sign in with a one-tap email link and reserve your `viberesume.in/{handle}` URL.
 
-- **Real capture** — the form POSTs to `/api/waitlist`, a Route Handler that validates the email and `SADD`s it to an **Upstash Redis** set via the REST API (dependency-free `fetch`). De-dupes automatically.
-- **Admin read** — `GET /api/waitlist` returns `{ count, emails }` only with the `WAITLIST_ADMIN_TOKEN` secret; otherwise `401`.
+- **Magic-link sign-in** — `/signup` is a server component that redirects already-signed-in users to `/account` and otherwise mounts a `SignInForm` client island. Submitting an email calls Supabase's `signInWithOtp`; the returned link points at `/auth/callback`, which exchanges the code for a session cookie and redirects to `?next` (defaults to `/account`).
+- **Slug claim flow** — the handle checker (`/tools/portfolio-handle-checker`) shows truthful Vibe Resume availability alongside the GitHub row by calling `GET /api/slugs/[slug]`. The "Claim viberesume.in/{handle}" CTA routes through `/claim/[slug]` — a server component that auth-gates with `?next=/claim/{slug}`, runs the insert via the service-role client, and redirects to `/account?claimed={slug}` with a success banner (or `?error=taken|reserved|invalid` if it can't).
+- **REST resource** — `/api/slugs/[slug]` is the canonical resource: `GET` returns availability (`available` / `taken` / `reserved` / `invalid`); `POST` claims for the signed-in user. `PATCH` (Phase 2: publish + update `resume_data`/`theme_id`) and `DELETE` (Phase 3: unpublish/release) are noted stubs so the route shape never has to be renamed.
+- **Reserved slugs** — `lib/reservedSlugs.ts` derives a denylist from `lib/tools.ts` + static framework / auth / marketing / system paths; checked at the app layer so adding a tool slug never needs a migration. `lib/slugAvailability.ts` is the pure shared format/length/reserved check (`SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/`, `SLUG_MIN=3`, `SLUG_MAX=30`) used by both the GET endpoint and any future caller.
+- **Account page** — `/account` lists reserved handles and a sign-out button; `robots: { index: false }`.
+
+### Supabase data model
+
+- **`users`** mirrors `auth.users` (auto-populated by the `on_auth_user_created` trigger on insert into `auth.users`).
+- **`slugs`** holds reservations: `slug` as PK, `user_id` FK, `created_at`, plus a CHECK constraint enforcing the `[a-z0-9-]{3,30}` format. **Phase-2 columns** (`resume_data jsonb`, `theme_id text`, `published_at timestamptz`, `updated_at timestamptz`) are already on the table as nullable, so Phase 2 ships with zero migration.
+- **RLS is on**: anon can SELECT slugs (for the public availability check + future public profiles); only the owning user can INSERT against themselves; DELETE is also owner-only. No UPDATE policy yet — Phase 2 adds one scoped to `resume_data`/`theme_id`.
 
 ## Platform foundations
 
@@ -99,7 +108,7 @@ Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcomi
 - **Global navigation** — a sticky `SiteHeader` (wordmark → home, accessible Tools dropdown, theme toggle) and a `SiteFooter` link mesh, both reading the **single tool registry** `lib/tools.ts` so they can't drift. Add a new tool there and it appears everywhere. (No header conversion CTA by design — per the plan, CTAs only appear after a tool produces a result.)
 - **System / Light / Dark theme toggle** — a 3-state header control (`ThemeToggle`) persisted to `localStorage`. `:root` is light, `:root[data-theme="dark"]` is explicit dark, and `prefers-color-scheme` only applies when no manual choice is set (so System follows the OS but a pick always wins). A blocking inline script in `layout.tsx` applies the saved theme **before first paint** (no flash of the wrong theme).
 - **SEO template** — exact-match `<h1>`, unique keyword-rich meta description per page, `/tools/{kebab-keyword}` slug, OpenGraph (+ per-tool `opengraph-image`), canonical, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Site-wide: `metadataBase` (so OG/canonical URLs resolve to the production origin), `app/sitemap.ts`, `app/robots.ts`, and `app/manifest.ts` + `app/icon.svg`. Tools cross-link siblings; the footer links all ten from every page.
-- **Trust & legal** — Privacy, Terms and Contact pages (`/privacy`, `/terms`, `/contact`), linked in the footer. The privacy policy is honest about the model: resume content is processed in the browser and never uploaded; only a waitlist email (if given) and anonymous PostHog analytics are collected.
+- **Trust & legal** — Privacy, Terms and Contact pages (`/privacy`, `/terms`, `/contact`), linked in the footer. The privacy policy is honest about the model: resume content is processed in the browser and never uploaded; the only personal data we store is your sign-in email + any handles you reserve, plus anonymous PostHog analytics.
 - **Conversion tracking** — funnel events (`page_view`, `tool_started`, `tool_completed`, `result_interacted`, `cta_clicked`) pushed to `dataLayer` + PostHog, each stamped with `tool_slug`. Result-gated, UTM-tagged CTAs.
 - **Pure, testable logic** — every tool's analysis/generation lives in a dependency-free `lib/*.ts` covered by the Node test runner; the React layer is a thin client component.
 
@@ -108,7 +117,7 @@ Every tool's "Publish" CTA lands on `/signup`, a waitlist capture for the upcomi
 - [Next.js 16](https://nextjs.org) (App Router) + React 19, TypeScript
 - CSS Modules + CSS custom properties (semantic theme tokens, WCAG-AA in light & dark)
 - [`qrcode`](https://www.npmjs.com/package/qrcode) for the QR tool (dynamic-imported)
-- [Upstash Redis](https://upstash.com) (REST) for the waitlist
+- [Supabase](https://supabase.com) (Postgres + Auth + RLS) for sign-in and handle reservations, via `@supabase/supabase-js` + `@supabase/ssr`
 - Node's built-in test runner for pure-logic unit tests
 - [Playwright](https://playwright.dev) + [axe-core](https://github.com/dequelabs/axe-core) for render + contrast e2e (light & dark)
 
@@ -123,8 +132,11 @@ app/
   SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx chrome.module.css   # global nav + theme toggle
   sitemap.ts robots.ts manifest.ts icon.svg   # SEO/PWA metadata routes + brand icon
   privacy/ terms/ contact/    # legal + contact pages (legal.module.css)
-  signup/                     # waitlist landing + client form
-  api/waitlist/route.ts       # POST add email / GET admin read (Upstash)
+  signup/                     # magic-link sign-in (server component + SignInForm client island)
+  auth/callback/route.ts      # magic-link return — exchanges code for session, redirects to ?next
+  claim/[slug]/page.tsx       # server-side slug claim landing (auth-gates + inserts)
+  account/                    # signed-in user dashboard (handles + sign-out)
+  api/slugs/[slug]/route.ts   # GET availability / POST claim (PATCH+DELETE stubs for Phase 2/3)
   tools/<slug>/               # one dir per tool:
     page.tsx                  #   metadata + JSON-LD + how-it-works + cross-links + FAQ
     <Client>.tsx              #   "use client" tool UI (Converter / Deck / Generator / …)
@@ -135,6 +147,8 @@ lib/
   ats.ts resume.ts            # ATS + PDF-resume parsers
   github.ts devresume.ts ghportfolio.ts   # GitHub primitives + the two portfolio tools
   themes.ts slug.ts aboutme.ts qr.ts casestudy.ts handle.ts   # tools #4,#5,#6,#8,#9,#10
+  supabase/{client,server,admin}.ts   # SSR-aware Supabase clients (browser anon / server cookies / service-role)
+  reservedSlugs.ts slugAvailability.ts # slug denylist + pure availability check (format/length/reserved)
 public/
   pdf.worker.min.mjs          # self-hosted pdf.js worker (see note below)
 test/                         # *.unit.test.ts — pure-logic unit tests (Node runner)
@@ -191,22 +205,26 @@ Gated on an env var, so the app runs fine without it (events become no-ops).
 > the build, which silently breaks `NEXT_PUBLIC_` inlining. Add them as normal plaintext vars
 > (the `phc_` key is publishable/client-side by design).
 
-### Waitlist (Upstash Redis)
+### Supabase (auth + handle reservations)
 
-Server-side only — **never** prefix these with `NEXT_PUBLIC_`.
+Replaces the deleted `/api/waitlist` Upstash setup. The anon key is public by design (it's protected by RLS in the browser); the service-role key bypasses RLS and is server-only.
 
-| Variable | Description |
-|----------|-------------|
-| `UPSTASH_REDIS_REST_URL` | Upstash REST endpoint for the waitlist set |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash REST token |
-| `WAITLIST_ADMIN_TOKEN` | Secret required to read collected emails via `GET /api/waitlist` |
+| Variable | Description | Sensitive in Vercel? |
+|----------|-------------|----------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL, e.g. `https://<ref>.supabase.co` | No |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable (`sb_publishable_...`) — used by `lib/supabase/client.ts` + `server.ts` | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret (`sb_secret_...`) — used only by `lib/supabase/admin.ts` for owner-checked inserts | **Yes** |
 
-> Export the list any time: `SMEMBERS waitlist` in the Upstash console, or
-> `curl -H "Authorization: Bearer $WAITLIST_ADMIN_TOKEN" https://<host>/api/waitlist`.
+> ⚠️ Add `https://viberesume.in/auth/callback` (and `http://localhost:3000/auth/callback` for dev)
+> to **Supabase → Authentication → URL Configuration → Redirect URLs**, and set the **Site URL**
+> to `https://viberesume.in`. Without this, the magic-link redirect bounces to a generic Supabase
+> page instead of completing sign-in.
 
 ## Roadmap
 
-All 10 cluster tools are shipped. What's next isn't more tools:
+All 10 cluster tools are shipped. What's next is the publish epic in phases:
 
-1. **The "publish" epic** — the real product behind every "Publish" CTA: accounts/auth + a database + dynamic hosting for `viberesume.in/{name}` URLs + slug claiming (ties into the Handle Checker). The real domain is now **`viberesume.in`** (live on Vercel); the `{name}` URLs shown in previews are still aspirational until the hosting is built.
-2. **SEO & distribution** — submit the sitemap to GSC + IndexNow, internal-link/word-count audits, and per-launch distribution.
+1. **Phase 1 — Auth + handle claim (LIVE).** Magic-link sign-in, slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`. Shipped 2026-06-09.
+2. **Phase 2 — The actual published page.** Dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the existing `ResumeSite` component; "Publish" wired to `PATCH /api/slugs/[slug]`; settings panel for headline / theme / contact links / photo / unpublish; re-upload + re-parse + overwrite as the resume edit path. Schema columns already in place — zero migration.
+3. **Phase 3 — Hardening.** Owner-only delete/unpublish, rate-limit `POST`/`PATCH` via Upstash, sitemap inclusion for published profiles, robots block on `/account` + `/claim`, GDPR one-click purge, slug squat TTL.
+4. **SEO & distribution.** GSC + IndexNow submitted (2026-06-08). Per-launch distribution per the plan: IH, r/resumes, r/cscareerquestions, Show HN, Product Hunt.
