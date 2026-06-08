@@ -38,6 +38,13 @@
 .themeBtnOn { background: var(--background); color: var(--accent); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 @media (max-width: 380px) { .themeToggle { display: none; } }
 
+.signin {
+  display: inline-flex; align-items: center; padding: 8px 13px;
+  border: 1px solid var(--line); border-radius: 9px;
+  color: var(--text); font-weight: 600; font-size: 14.5px;
+}
+.signin:hover { border-color: var(--accent); }
+
 .menuWrap { position: relative; }
 .menuBtn {
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;

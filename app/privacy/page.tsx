@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <p className={styles.note}>
         The short version: the tools run entirely in your browser. Your resume and the files you
         open are <strong>never uploaded to our servers</strong>. The only personal data we ever
-        store is the email you choose to give us for the waitlist.
+        store is the email you choose to give us when signing in to claim a handle.
       </p>
 
       <h2>Your resume stays on your device</h2>
@@ -35,7 +35,8 @@ export default function PrivacyPage() {
 
       <h2>What we collect</h2>
       <ul>
-        <li><strong>Waitlist email</strong> — only if you submit the signup form. It&apos;s stored in our database (Upstash Redis) and used solely to notify you when publishing launches.</li>
+        <li><strong>Account email</strong> — only if you sign in to claim a handle. We use Supabase to send a one-tap magic link to the email you provide and to associate any handles you reserve with your account. No password is stored.</li>
+        <li><strong>Reserved handles</strong> — any <code>viberesume.in/&#123;handle&#125;</code> slug you claim is stored against your account.</li>
         <li><strong>Anonymous usage analytics</strong> — via PostHog, we collect which pages and tools are used (and approximate, IP-derived location/device) to improve the product. It isn&apos;t tied to your resume content.</li>
         <li><strong>Local preferences</strong> — your light/dark theme choice is saved in your browser&apos;s <code>localStorage</code>; PostHog may set cookies.</li>
       </ul>
@@ -49,9 +50,9 @@ export default function PrivacyPage() {
 
       <h2>Your choices</h2>
       <p>
-        Don&apos;t submit the waitlist form if you&apos;d rather not share an email. You can clear
-        cookies and <code>localStorage</code> at any time, and ask us to remove your waitlist email
-        via the <a href="/contact">contact page</a>.
+        Don&apos;t sign in if you&apos;d rather not share an email — every tool works without one.
+        You can clear cookies and <code>localStorage</code> at any time, and ask us to delete your
+        account and any reserved handles via the <a href="/contact">contact page</a>.
       </p>
 
       <h2>Changes</h2>

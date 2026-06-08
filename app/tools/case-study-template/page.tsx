@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     q: "Does it write the case study for me?",
-    a: "It structures and formats what you provide rather than inventing claims about your work — your results stay truthful. If you'd like the wording tightened or tailored to a specific client by AI, that's a feature you can join the waitlist for.",
+    a: "It structures and formats what you provide rather than inventing claims about your work — your results stay truthful. An AI-tightened version (tailored to a specific client) is a planned upgrade — not built yet.",
   },
   {
     q: "Is this tool free?",

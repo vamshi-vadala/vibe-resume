@@ -12,10 +12,17 @@ async function stubGithub(page: Page, status: number) {
     route.fulfill({ status, contentType: "application/json", body: status === 200 ? JSON.stringify({ login: "x" }) : "{}" })
   );
 }
+/** Stub our own /api/slugs/{slug} availability endpoint. */
+async function stubViberesume(page: Page, status: "available" | "taken" | "reserved" | "invalid") {
+  await page.route("**/api/slugs/**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status }) })
+  );
+}
 
 test.describe("portfolio handle checker", () => {
-  test("a free GitHub username reads as available", async ({ page }) => {
+  test("a free handle reads as available on both rows", async ({ page }) => {
     await stubGithub(page, 404);
+    await stubViberesume(page, "available");
     await page.goto(URL);
 
     const bodyBg = await page.locator("body").evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -25,23 +32,35 @@ test.describe("portfolio handle checker", () => {
     await page.getByRole("button", { name: /try a sample/i }).click();
     await expect(page.locator("#result")).toBeVisible();
 
-    await expect(page.getByText("✓ Available")).toBeVisible();
+    await expect(page.locator('[data-row="viberesume"]').getByText("✓ Available")).toBeVisible();
+    await expect(page.locator('[data-row="github"]').getByText("✓ Available")).toBeVisible();
     // honest "check yourself" links for the platforms we can't query
     await expect(page.locator("#result").getByRole("link", { name: /linkedin check/i })).toBeVisible();
     await expect(page.locator("#result").getByRole("link", { name: /x \(twitter\)/i })).toBeVisible();
-    // claim CTA references the handle
-    await expect(page.getByRole("button", { name: /claim @octocat/i })).toBeVisible();
+    // claim CTA references the full slug
+    await expect(page.getByRole("button", { name: /claim viberesume\.in\/octocat/i })).toBeVisible();
   });
 
   test("a taken GitHub username reads as taken", async ({ page }) => {
     await stubGithub(page, 200);
+    await stubViberesume(page, "available");
     await page.goto(URL);
     await page.getByRole("button", { name: /try a sample/i }).click();
-    await expect(page.getByText("✗ Taken")).toBeVisible();
+    await expect(page.locator('[data-row="github"]').getByText("✗ Taken")).toBeVisible();
+  });
+
+  test("a taken Vibe Resume handle reads as taken and hides the claim CTA", async ({ page }) => {
+    await stubGithub(page, 404);
+    await stubViberesume(page, "taken");
+    await page.goto(URL);
+    await page.getByRole("button", { name: /try a sample/i }).click();
+    await expect(page.locator('[data-row="viberesume"]').getByText("✗ Taken")).toBeVisible();
+    await expect(page.getByRole("button", { name: /claim viberesume\.in/i })).toHaveCount(0);
   });
 
   test("invalid handle shows a friendly error, no result", async ({ page }) => {
     await stubGithub(page, 404);
+    await stubViberesume(page, "available");
     await page.goto(URL);
     await page.getByPlaceholder("jordanrivera").fill("@@@");
     await page.getByRole("button", { name: /check availability/i }).click();
@@ -51,9 +70,10 @@ test.describe("portfolio handle checker", () => {
 
   test("no axe color-contrast violations", async ({ page }) => {
     await stubGithub(page, 404);
+    await stubViberesume(page, "available");
     await page.goto(URL);
     await page.getByRole("button", { name: /try a sample/i }).click();
-    await expect(page.getByText("✓ Available")).toBeVisible();
+    await expect(page.locator('[data-row="github"]').getByText("✓ Available")).toBeVisible();
 
     const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
     const violations = results.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target.join(" ")) }));

@@ -22,8 +22,8 @@ export default function TermsPage() {
       <p>
         Vibe Resume offers free, browser-based tools that help you turn a resume or profile into
         web-ready content. The tools are provided <strong>&quot;as is&quot; and &quot;as available&quot;</strong>,
-        without warranties of any kind. The &quot;publish your resume&quot; feature referenced in the
-        tools is upcoming — joining the waitlist does not guarantee access or a delivery date.
+        without warranties of any kind. The &quot;publish your resume&quot; feature is rolling
+        out in phases — reserving a handle does not guarantee a delivery date for the live page.
       </p>
 
       <h2>Your content and output</h2>

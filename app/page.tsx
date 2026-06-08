@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const STEPS = [
   { n: "1", title: "Pick a tool", body: "Choose the one that matches what you're trying to do." },
   { n: "2", title: "Paste or upload", body: "Drop in a resume, a link or a GitHub username — it all runs in your browser." },
-  { n: "3", title: "Copy, download or publish", body: "Take the result anywhere, or join the waitlist to host it." },
+  { n: "3", title: "Copy, download or publish", body: "Take the result anywhere, or claim your viberesume.in handle to host it." },
 ];
 
 const TRUST = [

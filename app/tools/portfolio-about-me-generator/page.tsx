@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     q: "Is the text written by AI?",
-    a: "The free generator uses a curated writing engine, so it's instant and private with no signup. If you want it tailored to a specific job or brand by AI, that's a feature you can join the waitlist for.",
+    a: "The free generator uses a curated writing engine, so it's instant and private with no signup. An AI-tailored version (per job or brand) is a planned upgrade — not built yet.",
   },
   {
     q: "Is this tool free?",

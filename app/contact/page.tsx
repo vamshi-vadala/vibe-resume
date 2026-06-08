@@ -24,15 +24,15 @@ export default function ContactPage() {
         <li><a href={REPO} target="_blank" rel="noopener noreferrer">Browse the project on GitHub →</a></li>
       </ul>
 
-      <h2>Product updates</h2>
+      <h2>Claim your handle</h2>
       <p>
-        Want to know when you can publish your resume as a hosted site? <a href="/signup">Join the
-        waitlist</a> and we&apos;ll email you once — no spam.
+        Ready to publish your resume as a hosted site? <a href="/signup">Sign in</a> with
+        a one-tap email link and claim your <strong>viberesume.in</strong> handle.
       </p>
 
       <h2>Data requests</h2>
       <p>
-        To have your waitlist email removed, open a request via the GitHub link above. See our{" "}
+        To have your account and reservations removed, open a request via the GitHub link above. See our{" "}
         <a href="/privacy">Privacy Policy</a> for what we do and don&apos;t collect.
       </p>
     </main>

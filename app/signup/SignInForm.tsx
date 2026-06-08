@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client.ts";
 
-type State = "idle" | "submitting" | "done" | "error";
+type State = "idle" | "submitting" | "sent" | "error";
 
-export default function WaitlistForm() {
+export default function SignInForm({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
   const [message, setMessage] = useState("");
@@ -13,29 +14,27 @@ export default function WaitlistForm() {
     e.preventDefault();
     setState("submitting");
     setMessage("");
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setMessage(data.error || "Something went wrong — try again.");
-        setState("error");
-        return;
-      }
-      setState("done");
-    } catch {
-      setMessage("Network error — check your connection and try again.");
+    const supabase = createSupabaseBrowserClient();
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`
+        : undefined;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo },
+    });
+    if (error) {
+      setMessage(error.message || "Couldn’t send the link — try again.");
       setState("error");
+      return;
     }
+    setState("sent");
   }
 
-  if (state === "done") {
+  if (state === "sent") {
     return (
       <p style={{ fontSize: 17, fontWeight: 600, color: "var(--accent)", lineHeight: 1.6 }}>
-        ✓ You&apos;re on the list. We&apos;ll email you the moment publishing is live.
+        ✓ Check your inbox. We sent a one-tap sign-in link to <strong>{email}</strong>.
       </p>
     );
   }
@@ -68,7 +67,7 @@ export default function WaitlistForm() {
             cursor: state === "submitting" ? "default" : "pointer", opacity: state === "submitting" ? 0.7 : 1,
           }}
         >
-          {state === "submitting" ? "Adding…" : "Notify me →"}
+          {state === "submitting" ? "Sending…" : "Email me a link →"}
         </button>
       </form>
       {state === "error" && (

@@ -19,6 +19,7 @@ function track(event: string, props: Record<string, unknown> = {}) {
 }
 
 type GhStatus = "available" | "taken" | "unknown";
+type VrStatus = "available" | "taken" | "reserved" | "invalid" | "unknown";
 
 /** Live, truthful GitHub availability check (404 = free, 200 = taken). */
 async function checkGithub(handle: string): Promise<GhStatus> {
@@ -36,11 +37,28 @@ async function checkGithub(handle: string): Promise<GhStatus> {
   }
 }
 
+/** viberesume.in/{handle} availability via our REST resource. */
+async function checkViberesume(handle: string): Promise<VrStatus> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(`/api/slugs/${encodeURIComponent(handle)}`, { signal: ctrl.signal });
+    if (!res.ok && res.status !== 409) return "unknown";
+    const data = (await res.json()) as { status?: VrStatus };
+    return data.status ?? "unknown";
+  } catch {
+    return "unknown";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default function HandleChecker() {
   const [input, setInput] = useState("");
   const [handle, setHandle] = useState<string | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [gh, setGh] = useState<GhStatus | null>(null);
+  const [vr, setVr] = useState<VrStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,21 +73,23 @@ export default function HandleChecker() {
     setHandle(h);
     setTargets(buildTargets(h));
     setGh(null);
+    setVr(null);
     setChecking(true);
     track("tool_started");
     requestAnimationFrame(() =>
       document.getElementById("result")?.scrollIntoView({ behavior: "smooth", block: "start" })
     );
-    const status = await checkGithub(h);
-    setGh(status);
+    const [ghStatus, vrStatus] = await Promise.all([checkGithub(h), checkViberesume(h)]);
+    setGh(ghStatus);
+    setVr(vrStatus);
     setChecking(false);
-    track("tool_completed", { github: status });
+    track("tool_completed", { github: ghStatus, viberesume: vrStatus });
   }
 
   function claim(placement: string) {
     track("cta_clicked", { placement, handle: handle ?? undefined });
-    const slug = handle ? `&slug=${encodeURIComponent(handle)}` : "";
-    window.location.href = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}${slug}`;
+    if (!handle) return;
+    window.location.href = `/claim/${encodeURIComponent(handle)}`;
   }
 
   return (
@@ -112,8 +132,24 @@ export default function HandleChecker() {
             <h2 className={styles.resultTitle}>Results for <span className={styles.handle}>@{handle}</span></h2>
           </div>
 
+          {/* viberesume.in — the namespace we own; truthful DB lookup */}
+          <div data-row="viberesume" className={`${styles.gh} ${vr === "available" ? styles.ghFree : (vr === "taken" || vr === "reserved") ? styles.ghTaken : ""}`}>
+            <div className={styles.ghMain}>
+              <span className={styles.ghLabel}>Vibe Resume</span>
+              <span className={styles.ghUrl}>viberesume.in/{handle}</span>
+            </div>
+            <div className={styles.ghStatus} aria-live="polite">
+              {vr === null && <span className={styles.statusChecking}>Checking…</span>}
+              {vr === "available" && <span className={styles.statusFree}>✓ Available</span>}
+              {vr === "taken" && <span className={styles.statusTaken}>✗ Taken</span>}
+              {vr === "reserved" && <span className={styles.statusTaken}>✗ Reserved</span>}
+              {vr === "invalid" && <span className={styles.statusUnknown}>Invalid format</span>}
+              {vr === "unknown" && <span className={styles.statusUnknown}>Couldn’t check</span>}
+            </div>
+          </div>
+
           {/* GitHub — the one we can truthfully check */}
-          <div className={`${styles.gh} ${gh === "available" ? styles.ghFree : gh === "taken" ? styles.ghTaken : ""}`}>
+          <div data-row="github" className={`${styles.gh} ${gh === "available" ? styles.ghFree : gh === "taken" ? styles.ghTaken : ""}`}>
             <div className={styles.ghMain}>
               <span className={styles.ghLabel}>GitHub</span>
               <span className={styles.ghUrl}>github.com/{handle}</span>
@@ -141,12 +177,19 @@ export default function HandleChecker() {
 
           {/* claim CTA — the Vibe Resume namespace is new, so it's honestly yours to take */}
           <NextSteps from="portfolio-handle-checker" />
-          <div className={styles.cta}>
-            <p>Lock in <strong>{handle}</strong> as your portfolio URL on Vibe Resume before it’s taken.</p>
-            <button className={`${styles.btn} ${styles.accent}`} onClick={() => claim("sticky_result")}>
-              Claim @{handle}
-            </button>
-          </div>
+          {vr === "available" && (
+            <div className={styles.cta}>
+              <p>Lock in <strong>viberesume.in/{handle}</strong> as your portfolio URL before someone else does.</p>
+              <button className={`${styles.btn} ${styles.accent}`} onClick={() => claim("sticky_result")}>
+                Claim viberesume.in/{handle}
+              </button>
+            </div>
+          )}
+          {(vr === "taken" || vr === "reserved") && (
+            <div className={styles.cta}>
+              <p><strong>viberesume.in/{handle}</strong> is taken — try a variation above.</p>
+            </div>
+          )}
         </section>
       )}
     </div>

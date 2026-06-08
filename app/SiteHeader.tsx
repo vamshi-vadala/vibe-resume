@@ -38,6 +38,7 @@ export default function SiteHeader() {
 
         <nav className={styles.nav} aria-label="Primary">
           <ThemeToggle />
+          <Link href="/signup" className={styles.signin}>Sign in</Link>
           <div className={styles.menuWrap} ref={menuRef}>
             <button
               type="button"
