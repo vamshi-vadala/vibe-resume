@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TOOLS } from "@/lib/tools.ts";
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
 import styles from "./chrome.module.css";
 
 export default function SiteHeader() {
@@ -38,7 +39,7 @@ export default function SiteHeader() {
 
         <nav className={styles.nav} aria-label="Primary">
           <ThemeToggle />
-          <Link href="/signup" className={styles.signin}>Sign in</Link>
+          <UserMenu />
           <div className={styles.menuWrap} ref={menuRef}>
             <button
               type="button"
