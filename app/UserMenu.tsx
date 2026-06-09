@@ -23,6 +23,14 @@ export default function UserMenu() {
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
+    // In CI / preview environments the Supabase env vars are intentionally
+    // unset (e2e runs against `npm run dev` with .env.local moved aside).
+    // Skip silently — the anon CTA stays rendered, which is exactly what
+    // those environments expect.
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setState({ status: "anon" });
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     let cancelled = false;
     supabase.auth.getSession().then(({ data: { session } }) => {
