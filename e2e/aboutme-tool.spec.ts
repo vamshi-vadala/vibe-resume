@@ -38,9 +38,9 @@ test.describe("portfolio about-me generator", () => {
     await expect(page.locator("#result").getByText(/Product Designer/).first()).toBeVisible();
     await expect(page.locator("#result").getByText(/6\+ years/).first()).toBeVisible();
 
-    // sticky band stays light on its dark gradient
-    const bandText = await colorOf(page, ":text('with your own URL')");
-    expect(await luminance(bandText), `band text not light enough: ${bandText}`).toBeGreaterThan(0.6);
+    // (The "Turn this into a real portfolio site with your own URL" sticky
+    // band was removed in the 2026-06-10 de-decoy sweep — About Me produces
+    // a copy fragment, not a publishable site. Axe contrast coverage stays.)
   });
 
   test("switching tone rewrites the about section instantly", async ({ page }) => {
