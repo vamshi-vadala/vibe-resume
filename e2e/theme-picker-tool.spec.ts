@@ -50,9 +50,11 @@ test.describe("dev portfolio theme picker", () => {
     const nameColor = await colorOf(page, "#result h3");
     expect(isTransparent(nameColor), `preview name color unresolved: ${nameColor}`).toBe(false);
 
-    // sticky publish band is dark in both app themes -> its text must stay light
-    const bandText = await colorOf(page, ":text('Publish your resume')");
-    expect(await luminance(bandText), `band text not light enough: ${bandText}`).toBeGreaterThan(0.6);
+    // (The "Publish your resume with the X theme on Vibe Resume" sticky
+    // band was removed in the 2026-06-10 de-decoy sweep — Theme Picker's
+    // real downstream is the "Use this theme on my resume" handoff below,
+    // which the next assertion still covers. Axe contrast below still
+    // catches any remaining contrast issues across the page.)
 
     // primary CTA hands off to the flagship PDF tool with a ?theme= param
     await page.getByRole("button", { name: /use this theme on my resume/i }).click();

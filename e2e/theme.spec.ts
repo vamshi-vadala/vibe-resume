@@ -41,9 +41,10 @@ test.describe("ATS converter theming", () => {
     const cardBg = await page.locator("#result").evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(isTransparent(cardBg), `result card background unresolved: ${cardBg}`).toBe(false);
 
-    // CTA band is dark in BOTH themes -> its text must stay light (the fix)
-    const ctaText = await colorOf(page, ":text('publish it as a live page')");
-    expect(await luminance(ctaText), `CTA text not light enough: ${ctaText}`).toBeGreaterThan(0.6);
+    // (The "publish it as a live page" sticky CTA band was removed in the
+    // 2026-06-10 de-decoy sweep — ATS has no site to publish, so its dark-
+    // band contrast assertion no longer has a target. Axe contrast check
+    // below still covers all remaining text.)
 
     // "+points" badge (accent2 token) must resolve to a non-transparent color
     const badgeColor = await colorOf(page, "ol li span:has-text('+')");
