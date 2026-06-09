@@ -103,6 +103,18 @@ The public profile lives at `app/[slug]/page.tsx`. It's a dynamic catch-all whos
 
 The only edit path today is re-publish (overwrites). Settings panel, unpublish, theme switching from `/account`, and rate-limiting `PATCH` are deferred to slice 2+.
 
+### Slice 2A — settings + unpublish + tightened reads
+
+- **`/account/[slug]/settings`** is a server component that loads the slug row, redirects non-owners to `/account`, redirects "reserved but never published" handles to `/account/publish`, and mounts `SettingsClient` with the validated `PublishPayload`. The client form edits name, headline, summary, contact links (chip add/remove), and theme (radio cards); on save it sends the full payload (preserving `sections` / `skills` / `photoUrl` from the loaded row) to `PATCH /api/slugs/[slug]`. Bullet-level editing of experience entries and photo replace are deferred to slice 2B.
+- **`DELETE /api/slugs/[slug]`** is owner-only and sets `published_at = null` (keeps the reservation + `resume_data` so the user can re-publish later). Releasing the handle entirely is a Phase 3 affordance.
+- **Tightened anon SELECT**: the `resume_data` column has been revoked from the `anon` role so a draft profile can't be read by anyone with the publishable key. The public profile page now reads via the service-role client (it scopes itself to `published_at IS NOT NULL`, so service-role usage stays narrow). Handle availability checks are unaffected — they only select `slug`. **The accompanying SQL migration that ships with this slice MUST be applied in the Supabase dashboard:**
+
+  ```sql
+  -- Lock down resume_data on anon reads. The public profile page now reads via
+  -- service-role (server-side, scoped to published_at IS NOT NULL).
+  REVOKE SELECT (resume_data) ON public.slugs FROM anon;
+  ```
+
 ### Supabase data model
 
 - **`users`** mirrors `auth.users` (auto-populated by the `on_auth_user_created` trigger on insert into `auth.users`).
@@ -145,8 +157,9 @@ app/
   claim/[slug]/page.tsx       # server-side slug claim landing (auth-gates + inserts)
   account/                    # signed-in user dashboard (handles + sign-out)
   account/publish/            # Phase 2 publish landing (reads sessionStorage stash + PATCHes)
+  account/[slug]/settings/    # Phase 2 editor (name/title/summary/contacts/theme + unpublish)
   [slug]/page.tsx             # public profile route — SSR-renders published resume_data
-  api/slugs/[slug]/route.ts   # GET availability / POST claim / PATCH publish (DELETE stub for Phase 3)
+  api/slugs/[slug]/route.ts   # GET availability / POST claim / PATCH publish / DELETE unpublish
   tools/<slug>/               # one dir per tool:
     page.tsx                  #   metadata + JSON-LD + how-it-works + cross-links + FAQ
     <Client>.tsx              #   "use client" tool UI (Converter / Deck / Generator / …)
@@ -246,6 +259,6 @@ Replaces the deleted `/api/waitlist` Upstash setup. The anon key is public by de
 All 10 cluster tools are shipped. What's next is the publish epic in phases:
 
 1. **Phase 1 — Auth + handle claim (LIVE).** OTP-code sign-in (Resend SMTP, 6-digit `{{ .Token }}`, magic link as fallback), slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`, `/account` + `/claim/` blocked in both `robots.ts` and per-page metadata. Shipped 2026-06-09.
-2. **Phase 2 — The actual published page.** **Slice 1 LIVE:** dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the shared `ResumeSite` component; PDF tool's "Publish" wired to `PATCH /api/slugs/[slug]` via a `sessionStorage` stash → `/account/publish`; account page shows View-live / Publish links per handle. **Slice 2 (next):** settings panel for headline / theme / contact links / photo / unpublish; theme switching from `/account`; tightening the anon SELECT policy on `slugs` to only expose `resume_data` when `published_at IS NOT NULL`. **Slice 3:** rate-limiting `PATCH` via Upstash, sitemap inclusion for published profiles, slug squat TTL.
+2. **Phase 2 — The actual published page.** **Slice 1 LIVE:** dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the shared `ResumeSite` component; PDF tool's "Publish" wired to `PATCH /api/slugs/[slug]` via a `sessionStorage` stash → `/account/publish`; account page shows View-live / Publish links per handle. **Slice 2A LIVE:** `/account/[slug]/settings` editor (name/headline/summary/contacts/theme) saving via PATCH; `DELETE /api/slugs/[slug]` unpublish; anon `resume_data` SELECT revoked, public profile reads via service-role. **Slice 2B (next):** photo upload + replace; bullet-level editing of experience entries. **Slice 3:** rate-limiting `PATCH` via Upstash, sitemap inclusion for published profiles, slug squat TTL.
 3. **Phase 3 — Hardening.** Owner-only delete/unpublish, rate-limit `POST`/`PATCH` via Upstash, sitemap inclusion for published profiles, robots block on `/account` + `/claim`, GDPR one-click purge, slug squat TTL.
 4. **SEO & distribution.** GSC + IndexNow submitted (2026-06-08). Per-launch distribution per the plan: IH, r/resumes, r/cscareerquestions, Show HN, Product Hunt.

@@ -14,16 +14,18 @@ export const metadata: Metadata = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ claimed?: string; published?: string; error?: string; slug?: string }>;
+  searchParams: Promise<{ claimed?: string; published?: string; unpublished?: string; error?: string; slug?: string }>;
 }) {
-  const { claimed, published, error, slug: errSlug } = await searchParams;
+  const { claimed, published, unpublished, error, slug: errSlug } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/signup?next=/account");
 
   const { data: slugs } = await supabase
     .from("slugs")
-    .select("slug, created_at, published_at")
+    // Project only `name` from resume_data so the dashboard doesn't pull a
+    // multi-KB JSONB per row; we just need truthiness ("has any data yet?").
+    .select("slug, created_at, published_at, resume_name:resume_data->>name")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -51,6 +53,14 @@ export default async function AccountPage({
           background: "var(--panel)", border: "1px solid var(--accent)", color: "var(--text)",
         }}>
           ✓ Published to <strong><Link href={`/${published}`} style={{ color: "var(--accent)" }}>viberesume.in/{published}</Link></strong>.
+        </div>
+      )}
+      {unpublished && (
+        <div role="status" style={{
+          marginBottom: 20, padding: "12px 16px", borderRadius: 10,
+          background: "var(--panel)", border: "1px solid var(--line)", color: "var(--text)",
+        }}>
+          Unpublished <strong>viberesume.in/{unpublished}</strong>. The handle is still yours — re-publish anytime from Edit.
         </div>
       )}
       {error && (
@@ -104,21 +114,22 @@ export default async function AccountPage({
                     {s.published_at ? "Live" : "Reserved · not published yet"}
                   </div>
                 </div>
-                {s.published_at ? (
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  {s.published_at && (
+                    <Link
+                      href={`/${s.slug}`}
+                      style={{ color: "var(--muted)", fontSize: 14 }}
+                    >
+                      View live ↗
+                    </Link>
+                  )}
                   <Link
-                    href={`/${s.slug}`}
+                    href={s.published_at || s.resume_name ? `/account/${s.slug}/settings` : "/tools/pdf-resume-to-website"}
                     style={{ color: "var(--accent)", fontWeight: 600, fontSize: 14 }}
                   >
-                    View live →
+                    {s.published_at || s.resume_name ? "Edit →" : "Publish →"}
                   </Link>
-                ) : (
-                  <Link
-                    href="/tools/pdf-resume-to-website"
-                    style={{ color: "var(--accent)", fontWeight: 600, fontSize: 14 }}
-                  >
-                    Publish →
-                  </Link>
-                )}
+                </div>
               </li>
             ))}
           </ul>

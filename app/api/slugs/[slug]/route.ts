@@ -114,5 +114,32 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<NextResponse> {
   return NextResponse.json({ status: "published", slug });
 }
 
-// DELETE: Phase 3 — unpublish or release reservation (RLS slugs_delete_own
-//   already permits this once the handler is added).
+// DELETE: unpublish — clears published_at but KEEPS the reservation and
+// resume_data so the user can re-publish later. Releasing the handle entirely
+// (actual row delete) is a separate Phase 3 affordance.
+export async function DELETE(_req: Request, ctx: Ctx): Promise<NextResponse> {
+  const { slug: raw } = await ctx.params;
+  const slug = raw.toLowerCase();
+
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+  const { data: row, error: lookupErr } = await supabase
+    .from("slugs")
+    .select("user_id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (lookupErr) return NextResponse.json({ error: "lookup_failed" }, { status: 500 });
+  if (!row) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (row.user_id !== user.id) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const admin = createSupabaseAdminClient();
+  const { error: updErr } = await admin
+    .from("slugs")
+    .update({ published_at: null, updated_at: new Date().toISOString() })
+    .eq("slug", slug);
+
+  if (updErr) return NextResponse.json({ error: "unpublish_failed" }, { status: 500 });
+  return NextResponse.json({ status: "unpublished", slug });
+}

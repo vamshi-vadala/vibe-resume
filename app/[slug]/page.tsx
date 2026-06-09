@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
 import { validatePublishPayload } from "@/lib/publish.ts";
 import { checkSlugLocal } from "@/lib/slugAvailability.ts";
 import ResumeSite from "../tools/pdf-resume-to-website/ResumeSite";
@@ -9,18 +9,24 @@ import ResumeSite from "../tools/pdf-resume-to-website/ResumeSite";
 // signup, account, etc.) and reserved slugs (lib/reservedSlugs.ts) win first
 // — this only matches user-claimed handles. notFound() if missing, unowned,
 // or not yet published.
+//
+// Reads via the service-role client because the anon role no longer has SELECT
+// on the `resume_data` column (slice 2A RLS tightening — see README). This
+// page itself filters `published_at IS NOT NULL`, so service-role usage is
+// scoped to "render a public profile" and never returns draft data.
 
 type Ctx = { params: Promise<{ slug: string }> };
 
 async function loadProfile(slug: string) {
   if (checkSlugLocal(slug)) return null;
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
     .from("slugs")
     .select("slug, resume_data, published_at")
     .eq("slug", slug)
+    .not("published_at", "is", null)
     .maybeSingle();
-  if (!data || !data.published_at || !data.resume_data) return null;
+  if (!data || !data.resume_data) return null;
   const validated = validatePublishPayload(data.resume_data);
   if (!validated.ok) return null;
   return { slug: data.slug, ...validated.payload };
