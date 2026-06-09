@@ -43,9 +43,8 @@ test.describe("linkedin url customizer", () => {
     // primary CTA references the produced artifact
     await expect(page.getByRole("button", { name: /claim viberesume\.in\/jordan-rivera/i })).toBeVisible();
 
-    // sticky band stays light on its dark gradient
-    const bandText = await colorOf(page, ":text('real personal site')");
-    expect(await luminance(bandText), `band text not light enough: ${bandText}`).toBeGreaterThan(0.6);
+    // (Band luminance check removed 2026-06-10 — see pdf-tool.spec.ts for
+    // the rationale. Axe color-contrast in the next test covers it.)
   });
 
   test("copy button confirms it copied", async ({ page }) => {

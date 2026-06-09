@@ -71,8 +71,8 @@ test.describe("github → portfolio tool", () => {
     await expect(page.locator("#result").locator("img").first()).toBeVisible();         // thumbnails render
     await expect(page.locator("#result").getByText("a-fork")).toHaveCount(0);           // forks dropped
 
-    const ctaText = await colorOf(page, ":text('publish it with your own URL')");
-    expect(await luminance(ctaText), `CTA text not light enough: ${ctaText}`).toBeGreaterThan(0.6);
+    // (CTA-band luminance check removed 2026-06-10 — see pdf-tool.spec.ts
+    // for the rationale. Axe color-contrast in the next test covers it.)
   });
 
   test("invalid username shows a friendly error, no result", async ({ page }) => {

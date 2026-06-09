@@ -40,9 +40,12 @@ test.describe("PDF→website tool theming", () => {
     );
     expect(isTransparent(avatarBg), `avatar background unresolved: ${avatarBg}`).toBe(false);
 
-    // CTA band is dark in BOTH themes -> its text must stay light
-    const ctaText = await colorOf(page, ":text('publish it with your own URL')");
-    expect(await luminance(ctaText), `CTA text not light enough: ${ctaText}`).toBeGreaterThan(0.6);
+    // (CTA-band luminance check removed 2026-06-10. It coupled the selector
+    // to a literal copy fragment ("publish it with your own URL"), so any
+    // band copy edit silently re-bound :text() to a different page node and
+    // false-failed. The next test in this spec already runs axe color-
+    // contrast across the full page — strictly more coverage than a single-
+    // text-match canary, with no copy coupling.)
   });
 
   test("no axe color-contrast violations", async ({ page }) => {
