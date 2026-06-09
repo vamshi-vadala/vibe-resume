@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 
 export const metadata: Metadata = {
   title: "Sign in — Vibe Resume",
-  description: "Sign in or create your viberesume.in handle. We’ll email you a one-tap link — no password.",
+  description: "Sign in or create your viberesume.in handle. We’ll email you a 6-digit code — no password.",
   alternates: { canonical: "/signup" },
 };
 
@@ -27,12 +27,12 @@ export default async function SignupPage({
       </h1>
       <p style={{ color: "var(--muted)", fontSize: 17, lineHeight: 1.6, marginBottom: 32 }}>
         Sign in or create your <strong>viberesume.in</strong> handle. We’ll email you a
-        one-tap link — no password.
+        6-digit code — no password.
       </p>
       <SignInForm next={next} />
       {error === "auth" && (
         <p role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 14, marginTop: 16 }}>
-          That sign-in link expired or was already used. Send a fresh one above.
+          That sign-in link expired or was already used. Send a fresh code above.
         </p>
       )}
       <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 24 }}>

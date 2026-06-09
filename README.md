@@ -87,13 +87,13 @@ Turn your portfolio/resume link into a downloadable QR code.
 
 ### Account + handle claim — `/signup` + `/account` + `/api/slugs/[slug]` (Phase 1 of the publish epic)
 
-The real Phase-1 surface behind every "Publish" CTA: sign in with a one-tap email link and reserve your `viberesume.in/{handle}` URL.
+The real Phase-1 surface behind every "Publish" CTA: sign in with a 6-digit email code and reserve your `viberesume.in/{handle}` URL.
 
-- **Magic-link sign-in** — `/signup` is a server component that redirects already-signed-in users to `/account` and otherwise mounts a `SignInForm` client island. Submitting an email calls Supabase's `signInWithOtp`; the returned link points at `/auth/callback`, which exchanges the code for a session cookie and redirects to `?next` (defaults to `/account`).
+- **OTP-code sign-in** — `/signup` is a server component that redirects already-signed-in users to `/account` and otherwise mounts a `SignInForm` client island. Submitting an email calls Supabase's `signInWithOtp`; the user then enters the 6-digit `{{ .Token }}` from the email and we call `verifyOtp({ type: "email" })` client-side. The magic link in the same email still works as a fallback via `/auth/callback`, but the primary flow is the code — link scanners (Outlook/Gmail safe-links, corporate AV) pre-fetch single-use PKCE links and consume them before the user clicks, which surfaces as "link expired" within seconds; a code can't be pre-clicked.
 - **Slug claim flow** — the handle checker (`/tools/portfolio-handle-checker`) shows truthful Vibe Resume availability alongside the GitHub row by calling `GET /api/slugs/[slug]`. The "Claim viberesume.in/{handle}" CTA routes through `/claim/[slug]` — a server component that auth-gates with `?next=/claim/{slug}`, runs the insert via the service-role client, and redirects to `/account?claimed={slug}` with a success banner (or `?error=taken|reserved|invalid` if it can't).
 - **REST resource** — `/api/slugs/[slug]` is the canonical resource: `GET` returns availability (`available` / `taken` / `reserved` / `invalid`); `POST` claims for the signed-in user. `PATCH` (Phase 2: publish + update `resume_data`/`theme_id`) and `DELETE` (Phase 3: unpublish/release) are noted stubs so the route shape never has to be renamed.
 - **Reserved slugs** — `lib/reservedSlugs.ts` derives a denylist from `lib/tools.ts` + static framework / auth / marketing / system paths; checked at the app layer so adding a tool slug never needs a migration. `lib/slugAvailability.ts` is the pure shared format/length/reserved check (`SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/`, `SLUG_MIN=3`, `SLUG_MAX=30`) used by both the GET endpoint and any future caller.
-- **Account page** — `/account` lists reserved handles and a sign-out button; `robots: { index: false }`.
+- **Account page** — `/account` lists reserved handles and a sign-out button; `robots: { index: false }`. Both `/account` and `/claim/` are also disallowed in `robots.ts` (belt-and-suspenders against crawl-budget waste); `/claim/[slug]` carries the same `robots: { index: false, follow: false }` metadata as defense in depth even though it only ever returns redirects.
 
 ### Supabase data model
 

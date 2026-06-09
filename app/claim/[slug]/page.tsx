@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
 import { checkSlugLocal } from "@/lib/slugAvailability.ts";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 // Server-side claim landing. The handle checker (and any future surface) sends
 // the user here with the slug they want. If signed out, we bounce through
