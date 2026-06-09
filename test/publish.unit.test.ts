@@ -53,6 +53,21 @@ test("validatePublishPayload: rejects oversized payload", () => {
   if (!res.ok) assert.equal(res.reason, "too_large");
 });
 
+test("validatePublishPayload: accepts a reasonably-sized photo data URL", () => {
+  // 60KB-ish — a typical 400x400 q0.82 JPEG
+  const photo = "data:image/jpeg;base64," + "A".repeat(60_000);
+  const res = validatePublishPayload({ resume: validResume, photoUrl: photo, themeId: "" });
+  assert.equal(res.ok, true);
+});
+
+test("validatePublishPayload: rejects photoUrl exceeding per-field cap", () => {
+  // 250KB string — under the 300KB total budget but over the photo cap.
+  // Shrink resume so total stays below MAX_TOTAL_BYTES to isolate the photo check.
+  const photo = "data:image/jpeg;base64," + "A".repeat(250_000);
+  const res = validatePublishPayload({ resume: validResume, photoUrl: photo, themeId: "" });
+  assert.equal(res.ok, false);
+});
+
 test("validatePublishPayload: rejects malformed resume sections", () => {
   const bad = { ...validResume, sections: [{ heading: 1, items: [] }] };
   const res = validatePublishPayload({ resume: bad, photoUrl: "", themeId: "" });

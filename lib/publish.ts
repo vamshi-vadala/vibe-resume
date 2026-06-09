@@ -10,9 +10,10 @@ export interface PublishPayload {
   themeId: string;
 }
 
-const MAX_TOTAL_BYTES = 300_000;   // ~300KB JSON; photo data URL dominates
-const MAX_STRING = 20_000;          // any single string field (incl. photoUrl)
-const MAX_ARRAY = 200;              // bullets / items / skills cap
+const MAX_TOTAL_BYTES = 300_000;        // ~300KB JSON; photo data URL dominates
+const MAX_STRING = 20_000;               // any single string field except photoUrl
+const MAX_PHOTO_DATA_URL = 200_000;      // base64 of a 400x400 q0.82 JPEG ~30–60KB; leave headroom for PDF-extracted photos
+const MAX_ARRAY = 200;                   // bullets / items / skills cap
 
 function isStr(v: unknown, max = MAX_STRING): v is string {
   return typeof v === "string" && v.length <= max;
@@ -63,7 +64,9 @@ export function validatePublishPayload(raw: unknown): ValidationResult {
   } catch { return { ok: false, reason: "bad_shape" }; }
 
   const d = raw as Record<string, unknown>;
-  if (!isStr(d.photoUrl)) return { ok: false, reason: "bad_shape" };
+  if (typeof d.photoUrl !== "string" || d.photoUrl.length > MAX_PHOTO_DATA_URL) {
+    return { ok: false, reason: "bad_shape" };
+  }
   if (typeof d.themeId !== "string" || d.themeId.length > 64) return { ok: false, reason: "bad_theme" };
   if (!validateResume(d.resume)) return { ok: false, reason: "bad_resume" };
   return { ok: true, payload: { resume: d.resume as ResumeData, photoUrl: d.photoUrl, themeId: d.themeId } };

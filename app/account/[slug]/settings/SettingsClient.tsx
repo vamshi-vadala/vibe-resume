@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { THEMES } from "@/lib/themes.ts";
 import type { PublishPayload } from "@/lib/publish.ts";
+import { resizePhotoToDataUrl, photoErrorMessage } from "@/lib/photo.ts";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -15,6 +17,10 @@ const fieldStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: "block", fontSize: 13, fontWeight: 600, color: "var(--muted)",
   marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
+};
+const linkBtnStyle: React.CSSProperties = {
+  background: "none", border: 0, color: "var(--accent)", cursor: "pointer",
+  font: "inherit", padding: 0, textDecoration: "underline",
 };
 
 export default function SettingsClient({
@@ -29,20 +35,29 @@ export default function SettingsClient({
   const [title, setTitle] = useState(initial.resume.title);
   const [summary, setSummary] = useState(initial.resume.summary);
   const [contacts, setContacts] = useState<string[]>(initial.resume.contactLines);
-  const [newContact, setNewContact] = useState("");
+  const [skills, setSkills] = useState<string[]>(initial.resume.skills);
+  const [photoUrl, setPhotoUrl] = useState(initial.photoUrl);
+  const [photoError, setPhotoError] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [themeId, setThemeId] = useState(initial.themeId);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState("");
   const [unpublishing, setUnpublishing] = useState(false);
 
-  function addContact() {
-    const v = newContact.trim();
-    if (!v) return;
-    setContacts((c) => [...c, v]);
-    setNewContact("");
-  }
-  function removeContact(i: number) {
-    setContacts((c) => c.filter((_, n) => n !== i));
+  async function onPhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";  // allow re-picking the same file
+    if (!f) return;
+    setPhotoError("");
+    setPhotoBusy(true);
+    try {
+      const url = await resizePhotoToDataUrl(f);
+      setPhotoUrl(url);
+    } catch (err) {
+      setPhotoError(photoErrorMessage(err));
+    } finally {
+      setPhotoBusy(false);
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -52,12 +67,14 @@ export default function SettingsClient({
     const payload: PublishPayload = {
       ...initial,
       themeId,
+      photoUrl,
       resume: {
         ...initial.resume,
         name: name.trim(),
         title: title.trim(),
         summary: summary.trim(),
         contactLines: contacts,
+        skills,
       },
     };
     const res = await fetch(`/api/slugs/${slug}`, {
@@ -93,6 +110,56 @@ export default function SettingsClient({
   return (
     <form onSubmit={save} style={{ display: "grid", gap: 20 }}>
       <div>
+        <span style={labelStyle}>Photo</span>
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            aria-hidden
+            style={{
+              width: 84, height: 84, borderRadius: "50%", overflow: "hidden",
+              background: "var(--panel2)", border: "1px solid var(--line)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--muted)", fontSize: 28, fontWeight: 700, flexShrink: 0,
+            }}
+          >
+            {photoUrl
+              ? <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span>{(name.trim()[0] || "·").toUpperCase()}</span>}
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <label
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 8, fontWeight: 600, fontSize: 14,
+                background: "var(--panel2)", color: "var(--text)",
+                border: "1px solid var(--line)", cursor: photoBusy ? "default" : "pointer",
+                opacity: photoBusy ? 0.6 : 1, width: "fit-content",
+              }}
+            >
+              {photoBusy ? "Processing…" : (photoUrl ? "Replace photo" : "Upload photo")}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={onPhotoFile}
+                disabled={photoBusy}
+                style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden" }}
+              />
+            </label>
+            {photoUrl && (
+              <button type="button" onClick={() => setPhotoUrl("")} style={{ ...linkBtnStyle, fontSize: 13, color: "var(--muted)" }}>
+                Remove photo
+              </button>
+            )}
+            <span style={{ color: "var(--muted)", fontSize: 12 }}>
+              JPEG/PNG/WebP, up to 8MB. We resize to 400×400.
+            </span>
+            {photoError && (
+              <span role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 13 }}>{photoError}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div>
         <label htmlFor="name" style={labelStyle}>Name</label>
         <input id="name" value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} required />
       </div>
@@ -110,51 +177,21 @@ export default function SettingsClient({
         />
       </div>
 
-      <div>
-        <span style={labelStyle}>Contact links</span>
-        {contacts.length > 0 && (
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 10px", display: "grid", gap: 6 }}>
-            {contacts.map((c, i) => (
-              <li
-                key={i}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  gap: 10, padding: "8px 12px", border: "1px solid var(--line)",
-                  borderRadius: 8, background: "var(--panel)",
-                  fontSize: 14,
-                }}
-              >
-                <span style={{ wordBreak: "break-all" }}>{c}</span>
-                <button
-                  type="button"
-                  onClick={() => removeContact(i)}
-                  aria-label={`Remove ${c}`}
-                  style={{ background: "none", border: 0, color: "var(--muted)", cursor: "pointer", fontSize: 18, padding: 4, lineHeight: 1 }}
-                >×</button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={newContact}
-            onChange={(e) => setNewContact(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addContact(); } }}
-            placeholder="email, phone, or URL"
-            style={fieldStyle}
-            aria-label="Add a contact link"
-          />
-          <button
-            type="button"
-            onClick={addContact}
-            style={{
-              padding: "10px 18px", borderRadius: 10, fontWeight: 700, fontSize: 14,
-              background: "var(--panel2)", color: "var(--text)", border: "1px solid var(--line)",
-              cursor: "pointer", whiteSpace: "nowrap",
-            }}
-          >Add</button>
-        </div>
-      </div>
+      <ChipList
+        label="Contact links"
+        items={contacts}
+        onChange={setContacts}
+        placeholder="email, phone, or URL"
+        ariaAdd="Add a contact link"
+      />
+
+      <ChipList
+        label="Skills"
+        items={skills}
+        onChange={setSkills}
+        placeholder="e.g. Figma, React, Prototyping"
+        ariaAdd="Add a skill"
+      />
 
       <div>
         <span style={labelStyle}>Theme</span>
@@ -165,6 +202,8 @@ export default function SettingsClient({
           ))}
         </div>
       </div>
+
+      <SectionsPreview sections={initial.resume.sections} />
 
       {error && (
         <p role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 14 }}>{error}</p>
@@ -204,6 +243,109 @@ export default function SettingsClient({
         )}
       </div>
     </form>
+  );
+}
+
+function ChipList({
+  label, items, onChange, placeholder, ariaAdd,
+}: {
+  label: string;
+  items: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+  ariaAdd: string;
+}) {
+  const [draft, setDraft] = useState("");
+  function add() {
+    const v = draft.trim();
+    if (!v) return;
+    onChange([...items, v]);
+    setDraft("");
+  }
+  function remove(i: number) {
+    onChange(items.filter((_, n) => n !== i));
+  }
+  return (
+    <div>
+      <span style={labelStyle}>{label}</span>
+      {items.length > 0 && (
+        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 10px", display: "grid", gap: 6 }}>
+          {items.map((c, i) => (
+            <li
+              key={i}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                gap: 10, padding: "8px 12px", border: "1px solid var(--line)",
+                borderRadius: 8, background: "var(--panel)", fontSize: 14,
+              }}
+            >
+              <span style={{ wordBreak: "break-all" }}>{c}</span>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                aria-label={`Remove ${c}`}
+                style={{ background: "none", border: 0, color: "var(--muted)", cursor: "pointer", fontSize: 18, padding: 4, lineHeight: 1 }}
+              >×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder={placeholder}
+          style={fieldStyle}
+          aria-label={ariaAdd}
+        />
+        <button
+          type="button"
+          onClick={add}
+          style={{
+            padding: "10px 18px", borderRadius: 10, fontWeight: 700, fontSize: 14,
+            background: "var(--panel2)", color: "var(--text)", border: "1px solid var(--line)",
+            cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >Add</button>
+      </div>
+    </div>
+  );
+}
+
+function SectionsPreview({ sections }: { sections: PublishPayload["resume"]["sections"] }) {
+  if (!sections || sections.length === 0) return null;
+  return (
+    <div>
+      <span style={labelStyle}>Resume sections</span>
+      <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0, marginBottom: 10, lineHeight: 1.5 }}>
+        Experience, education, and project content is read-only here.{" "}
+        <Link href="/tools/pdf-resume-to-website" style={{ color: "var(--accent)" }}>
+          Re-upload your PDF
+        </Link>{" "}
+        and publish to replace these sections.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+        {sections.map((s, i) => {
+          const count = s.entries?.length ?? s.items.length;
+          const noun = s.entries ? (count === 1 ? "role" : "roles") : (count === 1 ? "item" : "items");
+          return (
+            <li
+              key={i}
+              style={{
+                padding: "10px 14px", border: "1px solid var(--line)",
+                borderRadius: 8, background: "var(--panel)",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                fontSize: 14,
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>{s.heading}</span>
+              <span style={{ color: "var(--muted)", fontSize: 13 }}>{count} {noun}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
