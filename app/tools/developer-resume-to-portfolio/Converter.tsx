@@ -5,10 +5,12 @@ import posthog from "posthog-js";
 import { analyzeDevResume, SAMPLE_DEV_RESUME, type DevProfile } from "@/lib/devresume.ts";
 import { usernameFromGitHubUrl, topReposFromApi, mergeRepos, type Repo } from "@/lib/github.ts";
 import NextSteps from "../../NextSteps";
+import DevPortfolio from "./DevPortfolio";
 import styles from "./converter.module.css";
 
 const TOOL_SLUG = "developer-resume-to-portfolio";
 const SIGNUP = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
+const PUBLISH_STASH_KEY = "vr.publish.pending";
 
 type DataLayer = Array<Record<string, unknown>>;
 function track(event: string, props: Record<string, unknown> = {}) {
@@ -22,6 +24,21 @@ function track(event: string, props: Record<string, unknown> = {}) {
 function goSignup(placement: string) {
   track("cta_clicked", { placement });
   window.location.href = SIGNUP;
+}
+
+function goPublish(placement: string, profile: DevProfile | null, repos: Repo[]) {
+  track("cta_clicked", { placement });
+  if (!profile) { window.location.href = SIGNUP; return; }
+  try {
+    sessionStorage.setItem(
+      PUBLISH_STASH_KEY,
+      JSON.stringify({ kind: "developer", profile, repos, themeId: "" }),
+    );
+  } catch {
+    window.location.href = SIGNUP;
+    return;
+  }
+  window.location.href = "/account/publish";
 }
 
 function slug(name: string) {
@@ -139,11 +156,11 @@ export default function Converter() {
               <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
               <span className={styles.url}>vibe.dev/{slug(data.name)}</span>
             </div>
-            <Portfolio data={data} repos={combineRepos(data.repos, liveRepos)} />
+            <DevPortfolio data={data} repos={combineRepos(data.repos, liveRepos)} />
           </div>
 
           <div className={styles.actions}>
-            <button className={`${styles.btn} ${styles.accent} ${styles.btnLg}`} onClick={() => goSignup("result_actions")}>
+            <button className={`${styles.btn} ${styles.accent} ${styles.btnLg}`} onClick={() => goPublish("result_actions", data, combineRepos(data.repos, liveRepos))}>
               Publish this portfolio →
             </button>
           </div>
@@ -151,7 +168,7 @@ export default function Converter() {
           <NextSteps from="developer-resume-to-portfolio" />
           <div className={styles.cta}>
             <p>Your portfolio is ready — publish it with your own URL in 1 click.</p>
-            <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result")}>
+            <button className={`${styles.btn} ${styles.primary}`} onClick={() => goPublish("sticky_result", data, combineRepos(data.repos, liveRepos))}>
               Publish on Vibe Resume
             </button>
           </div>
@@ -161,87 +178,3 @@ export default function Converter() {
   );
 }
 
-const LINK_LABEL: Record<string, string> = {
-  github: "GitHub", linkedin: "LinkedIn", website: "Website",
-  stackoverflow: "Stack Overflow", twitter: "Twitter", gitlab: "GitLab", devpost: "Devpost",
-};
-
-/** The generated developer portfolio — a single polished, responsive template. */
-function Portfolio({ data, repos }: { data: DevProfile; repos: Repo[] }) {
-  const allLinks = [
-    ...(data.githubUrl ? [{ kind: "github", label: data.githubUrl.replace(/^https?:\/\//, ""), url: data.githubUrl }] : []),
-    ...data.links,
-  ];
-  return (
-    <article className={styles.site}>
-      <header className={styles.siteHero}>
-        <h1 className={styles.siteName}>{data.name || "Your Name"}</h1>
-        {data.headline && <p className={styles.siteRole}>{data.headline}</p>}
-        {data.summary && <p className={styles.siteSummary}>{data.summary}</p>}
-        {allLinks.length > 0 && (
-          <div className={styles.linkRow}>
-            {allLinks.map((l, i) => (
-              <a key={i} className={styles.link} href={l.url} target="_blank" rel="noopener noreferrer">
-                {LINK_LABEL[l.kind] ?? "Link"}
-              </a>
-            ))}
-          </div>
-        )}
-      </header>
-
-      {data.stack.length > 0 && (
-        <section className={styles.siteSection}>
-          <h2 className={styles.siteH2}>Tech stack</h2>
-          <div className={styles.chips}>
-            {data.stack.map((s, i) => <span key={i} className={styles.chip}>{s}</span>)}
-          </div>
-        </section>
-      )}
-
-      {data.experience.length > 0 && (
-        <section className={styles.siteSection}>
-          <h2 className={styles.siteH2}>Experience</h2>
-          {data.experience.map((e, i) => (
-            <div key={i} className={styles.entry}>
-              <div className={styles.entryHead}>
-                {e.header && <span className={styles.entryTitle}>{e.header}</span>}
-                {e.meta && <span className={styles.entryMeta}>{e.meta}</span>}
-              </div>
-              {e.bullets.length > 0 && (
-                <ul className={styles.entryList}>
-                  {e.bullets.map((b, k) => <li key={k}>{b}</li>)}
-                </ul>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
-
-      {(repos.length > 0 || data.projects.length > 0) && (
-        <section className={styles.siteSection}>
-          <h2 className={styles.siteH2}>Projects</h2>
-          {repos.length > 0 && (
-            <div className={styles.repos}>
-              {repos.map((r, i) => (
-                <a key={i} className={styles.repoCard} href={r.url} target="_blank" rel="noopener noreferrer">
-                  <div className={styles.repoName}>{r.name}</div>
-                  {r.description && <div className={styles.repoDesc}>{r.description}</div>}
-                  <div className={styles.repoMeta}>
-                    {r.language && <span>{r.language}</span>}
-                    {typeof r.stars === "number" && r.stars > 0 && <span>★ {r.stars}</span>}
-                    <span className={styles.repoOwner}>{r.owner}/{r.name}</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-          {data.projects.length > 0 && (
-            <ul className={styles.entryList} style={{ marginTop: repos.length ? 14 : 0 }}>
-              {data.projects.map((p, i) => <li key={i}>{p}</li>)}
-            </ul>
-          )}
-        </section>
-      )}
-    </article>
-  );
-}

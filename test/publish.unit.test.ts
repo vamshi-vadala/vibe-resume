@@ -86,3 +86,70 @@ test("validatePublishPayload: rejects bad entry shape", () => {
   const res = validatePublishPayload({ resume: bad, photoUrl: "", themeId: "" });
   assert.equal(res.ok, false);
 });
+
+// --- discriminator: backward compat + new kinds ---
+
+test("validatePublishPayload: missing kind defaults to 'resume' (backward compat with rows written before kinds existed)", () => {
+  const res = validatePublishPayload({ resume: validResume, photoUrl: "", themeId: "" });
+  assert.equal(res.ok, true);
+  if (res.ok) assert.equal(res.payload.kind, "resume");
+});
+
+test("validatePublishPayload: explicit kind:'resume' validated the same way", () => {
+  const res = validatePublishPayload({ kind: "resume", resume: validResume, photoUrl: "", themeId: "" });
+  assert.equal(res.ok, true);
+});
+
+test("validatePublishPayload: unknown kind rejected", () => {
+  const res = validatePublishPayload({ kind: "bogus", themeId: "" });
+  assert.equal(res.ok, false);
+  if (!res.ok) assert.equal(res.reason, "bad_kind");
+});
+
+test("validatePublishPayload: kind:'developer' accepts a complete DevProfile payload", () => {
+  const profile = {
+    name: "Linus", headline: "Kernel hacker", summary: "Writes C.",
+    githubUrl: "https://github.com/torvalds",
+    profiles: ["torvalds"], links: [], repos: [], projects: [],
+    experience: [], stack: ["C"], empty: false,
+  };
+  const res = validatePublishPayload({
+    kind: "developer", profile, repos: [], themeId: "",
+  });
+  assert.equal(res.ok, true);
+});
+
+test("validatePublishPayload: kind:'developer' rejects missing profile fields", () => {
+  const res = validatePublishPayload({ kind: "developer", profile: { name: "x" }, repos: [], themeId: "" });
+  assert.equal(res.ok, false);
+});
+
+test("validatePublishPayload: kind:'github' accepts a complete GhProfile", () => {
+  const profile = {
+    username: "octocat", name: "Octocat", headline: "Mascot", about: "",
+    avatarUrl: "https://example.com/a.png",
+    githubUrl: "https://github.com/octocat",
+    company: null, location: null,
+    followers: 0, publicRepos: 1,
+    topLanguages: ["JS"], stack: ["JS"], links: [],
+    repos: [{ owner: "octocat", name: "Hello-World", url: "https://github.com/octocat/Hello-World" }],
+    empty: false,
+  };
+  const res = validatePublishPayload({ kind: "github", profile, themeId: "" });
+  assert.equal(res.ok, true);
+});
+
+test("validatePublishPayload: kind:'github' rejects malformed repos", () => {
+  const profile = {
+    username: "octocat", name: "Octocat", headline: "Mascot", about: "",
+    avatarUrl: "https://example.com/a.png",
+    githubUrl: "https://github.com/octocat",
+    company: null, location: null,
+    followers: 0, publicRepos: 1,
+    topLanguages: [], stack: [], links: [],
+    repos: [{ name: "no_owner" }],
+    empty: false,
+  };
+  const res = validatePublishPayload({ kind: "github", profile, themeId: "" });
+  assert.equal(res.ok, false);
+});

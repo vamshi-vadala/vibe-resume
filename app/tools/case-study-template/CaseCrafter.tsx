@@ -195,11 +195,10 @@ export default function CaseCrafter() {
             <span className={styles.aiGo} aria-hidden>→</span>
           </button>
 
+          {/* Case-study publishing is its own future tool (no template here
+              maps onto resume_data). The honest action is "claim a handle now,
+              wire it up when the case-study profile tool ships". */}
           <NextSteps from="case-study-template" />
-          <div className={styles.cta}>
-            <p>Publish this as a <strong>portfolio case-study page</strong> with your own URL on Vibe Resume.</p>
-            <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>Publish on Vibe Resume</button>
-          </div>
         </section>
       )}
     </div>

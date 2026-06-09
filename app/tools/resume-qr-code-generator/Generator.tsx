@@ -172,8 +172,14 @@ export default function Generator() {
           <NextSteps from="resume-qr-code-generator" />
           <div className={styles.cta}>
             <p>Make your QR point to <strong>one URL you own</strong> — claim your viberesume.in link so it never breaks.</p>
-            <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>
-              Claim on Vibe Resume
+            <button
+              className={`${styles.btn} ${styles.accent}`}
+              onClick={() => {
+                track("cta_clicked", { placement: "sticky_result" });
+                window.location.href = "/tools/portfolio-handle-checker";
+              }}
+            >
+              Claim a viberesume.in handle →
             </button>
           </div>
         </section>

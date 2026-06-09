@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { THEMES } from "@/lib/themes.ts";
-import type { PublishPayload } from "@/lib/publish.ts";
+import type { ResumePayload } from "@/lib/publish.ts";
 import { resizePhotoToDataUrl, photoErrorMessage } from "@/lib/photo.ts";
+import ResumeSite from "@/app/tools/pdf-resume-to-website/ResumeSite";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -27,7 +28,7 @@ export default function SettingsClient({
   slug, initial, isLive,
 }: {
   slug: string;
-  initial: PublishPayload;
+  initial: ResumePayload;
   isLive: boolean;
 }) {
   const router = useRouter();
@@ -64,8 +65,8 @@ export default function SettingsClient({
     e.preventDefault();
     setSaveState("saving");
     setError("");
-    const payload: PublishPayload = {
-      ...initial,
+    const payload: ResumePayload = {
+      kind: "resume",
       themeId,
       photoUrl,
       resume: {
@@ -107,7 +108,41 @@ export default function SettingsClient({
     router.refresh();
   }
 
+  // Live preview reflects every edit in real time — same ResumeSite that
+  // renders the public profile, so "what you see is what'll be live".
+  const previewResume = {
+    ...initial.resume,
+    name: name.trim() || initial.resume.name,
+    title: title.trim(),
+    summary: summary.trim(),
+    contactLines: contacts,
+    skills,
+  };
+
   return (
+    <>
+      <section
+        aria-label="Live preview"
+        style={{
+          marginBottom: 28, border: "1px solid var(--line)", borderRadius: 14,
+          background: "var(--panel)", overflow: "hidden",
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "10px 14px", borderBottom: "1px solid var(--line)",
+          background: "var(--panel2)", fontSize: 13, color: "var(--muted)",
+        }}>
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--line)" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--line)" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--line)" }} />
+          <span style={{ marginLeft: 8 }}>viberesume.in/{slug} · live preview</span>
+        </div>
+        <div style={{ padding: 16 }}>
+          <ResumeSite data={previewResume} photoUrl={photoUrl} themeId={themeId} />
+        </div>
+      </section>
+
     <form onSubmit={save} style={{ display: "grid", gap: 20 }}>
       <div>
         <span style={labelStyle}>Photo</span>
@@ -243,6 +278,7 @@ export default function SettingsClient({
         )}
       </div>
     </form>
+    </>
   );
 }
 
@@ -313,7 +349,7 @@ function ChipList({
   );
 }
 
-function SectionsPreview({ sections }: { sections: PublishPayload["resume"]["sections"] }) {
+function SectionsPreview({ sections }: { sections: ResumePayload["resume"]["sections"] }) {
   if (!sections || sections.length === 0) return null;
   return (
     <div>

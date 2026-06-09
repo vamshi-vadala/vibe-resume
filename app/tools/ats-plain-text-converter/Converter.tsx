@@ -154,36 +154,15 @@ export default function Converter() {
             <p className={`${styles.allClear} ${styles.toneOk}`}>✓ This resume parses cleanly — you&apos;re ATS-friendly.</p>
           )}
 
-          {/* evident primary actions */}
+          {/* The tool's job is plain text for ATS forms — there's nothing here
+              to "publish" as a site. The follow-on is the PDF→Website tool. */}
           <div className={styles.actions}>
             <button className={`${styles.btn} ${styles.primary} ${styles.btnLg}`} onClick={copy}>
               {copied ? "Copied ✓" : "Copy ATS-clean text"}
             </button>
-            <button
-              className={`${styles.btn} ${styles.accent} ${styles.btnLg}`}
-              onClick={() => {
-                track("cta_clicked", { placement: "result_actions" });
-                window.location.href = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
-              }}
-            >
-              Publish on Vibe Resume →
-            </button>
           </div>
 
-          {/* sticky CTA — only rendered after a result exists */}
           <NextSteps from="ats-plain-text-converter" />
-          <div className={styles.cta}>
-            <p>Your cleaned resume is ready — publish it as a live page in 1 click.</p>
-            <button
-              className={`${styles.btn} ${styles.primary}`}
-              onClick={() => {
-                track("cta_clicked", { placement: "sticky_result" });
-                window.location.href = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
-              }}
-            >
-              Publish on Vibe Resume
-            </button>
-          </div>
         </section>
       )}
     </div>

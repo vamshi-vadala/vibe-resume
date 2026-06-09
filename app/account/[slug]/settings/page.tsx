@@ -40,6 +40,14 @@ export default async function SettingsPage({ params }: Ctx) {
     redirect("/account?error=bad_data&slug=" + slug);
   }
 
+  // Only kind=resume has an in-app editor. The DevResume and GitHub portfolio
+  // kinds re-publish from their source tool to change anything — that's
+  // documented on /account next to those rows. Land here directly and we
+  // bounce back rather than render an editor that can't actually edit.
+  if (validated.payload.kind !== "resume") {
+    redirect(`/account?error=not_editable&slug=${slug}`);
+  }
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px", fontFamily: "inherit" }}>
       <header style={{ marginBottom: 24 }}>

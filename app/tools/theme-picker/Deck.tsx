@@ -164,13 +164,10 @@ export default function Deck() {
             </button>
           </div>
 
+          {/* The theme picker's real downstream action is the "Use this theme
+              on my resume" handoff above (?theme= on the PDF tool). Publish
+              happens there, not here — no site to publish from this tool. */}
           <NextSteps from="theme-picker" />
-          <div className={styles.cta}>
-            <p>Love this look? Publish your resume with the <strong>{chosenTheme.name}</strong> theme on Vibe Resume.</p>
-            <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>
-              Publish on Vibe Resume
-            </button>
-          </div>
         </section>
       )}
     </div>

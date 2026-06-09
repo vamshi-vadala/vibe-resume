@@ -205,7 +205,7 @@ export default function Converter() {
     try {
       sessionStorage.setItem(
         PUBLISH_STASH_KEY,
-        JSON.stringify({ resume: data, photoUrl, themeId }),
+        JSON.stringify({ kind: "resume", resume: data, photoUrl, themeId }),
       );
     } catch {
       // sessionStorage can throw (Safari private mode, quota, etc.) — fall back

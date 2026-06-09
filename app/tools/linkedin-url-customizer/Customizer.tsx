@@ -52,9 +52,12 @@ export default function Customizer() {
     window.setTimeout(() => setCopied((c) => (c === slug ? null : c)), 1600);
   }
 
-  function goSignup(placement: string, slug?: string) {
+  function goClaim(placement: string, slug?: string) {
     track("cta_clicked", { placement, slug });
-    window.location.href = slug ? `${SIGNUP}&slug=${encodeURIComponent(slug)}` : SIGNUP;
+    // /claim/[slug] is the real reservation flow — auth-gates with ?next
+    // and inserts when the user signs in. No slug? fall back to handle
+    // checker so they can pick one.
+    window.location.href = slug ? `/claim/${encodeURIComponent(slug)}` : "/tools/portfolio-handle-checker";
   }
 
   const best = suggestions?.[0]?.slug;
@@ -141,7 +144,7 @@ export default function Customizer() {
               <div className={styles.actions}>
                 <button
                   className={`${styles.btn} ${styles.accent} ${styles.btnLg}`}
-                  onClick={() => goSignup("result_primary", best)}
+                  onClick={() => goClaim("result_primary", best)}
                 >
                   Claim {best ? `viberesume.in/${best}` : "your own URL"} →
                 </button>
@@ -150,7 +153,7 @@ export default function Customizer() {
               <NextSteps from="linkedin-url-customizer" />
               <div className={styles.cta}>
                 <p>Want this as a <strong>real personal site</strong>, not just a LinkedIn slug? Claim your {best ? <code>{vibeUrl(best).replace("https://", "")}</code> : "own URL"} on Vibe Resume.</p>
-                <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result", best)}>
+                <button className={`${styles.btn} ${styles.primary}`} onClick={() => goClaim("sticky_result", best)}>
                   Claim on Vibe Resume
                 </button>
               </div>

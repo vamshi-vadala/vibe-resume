@@ -193,13 +193,10 @@ export default function Generator() {
             <span className={styles.aiGo} aria-hidden>→</span>
           </button>
 
+          {/* "About me" is a copy fragment — there's no site to publish from
+              this tool. The real downstream is generating a full portfolio
+              from a PDF / GitHub username, surfaced via NextSteps below. */}
           <NextSteps from="portfolio-about-me-generator" />
-          <div className={styles.cta}>
-            <p>Turn this into a real <strong>portfolio site</strong> with your own URL on Vibe Resume.</p>
-            <button className={`${styles.btn} ${styles.accent}`} onClick={() => goSignup("sticky_result")}>
-              Publish on Vibe Resume
-            </button>
-          </div>
         </section>
       )}
     </div>
