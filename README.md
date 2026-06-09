@@ -220,11 +220,21 @@ Replaces the deleted `/api/waitlist` Upstash setup. The anon key is public by de
 > to `https://viberesume.in`. Without this, the magic-link redirect bounces to a generic Supabase
 > page instead of completing sign-in.
 
+### Supabase auth gotchas (the ones that cost a session to debug)
+
+- **Email OTP Length must be 6.** `Authentication → Sign In/Providers → Email → Email OTP Length` is configurable 6–10. The `SignInForm` input has `maxLength={6}` and rejects shorter/longer values as "invalid code." If you ever change this, also update the input.
+- **Update BOTH email templates** — `Authentication → Emails → Templates`:
+  - **Magic Link** (fires for returning users)
+  - **Confirm signup** (fires for *first-time* emails — easy to miss in testing because you keep using new addresses, then assume the template "didn't save")
+  Both should use `{{ .Token }}` in the body (link as a fallback is fine). Same for Invite / Reset Password / Change Email if you use them.
+- **Built-in SMTP cap = 2 emails/hour per project** (not per recipient — bites in testing). The project is wired to **Resend** (`smtp.resend.com:465`, user `resend`, password = `re_...` API key, sender `noreply@viberesume.in`). The sending domain is verified in Resend via DNS (SPF + DKIM + DMARC TXT records). Once custom SMTP is on, bump `Authentication → Rate Limits → Emails per hour` from the default 2.
+- **PKCE links die to email scanners** — Outlook / Gmail safe-links / corporate AV pre-fetch the `/auth/callback?code=...` URL to scan it, consuming the single-use code before the user clicks → "link expired" within seconds. This is why the primary sign-in path is the 6-digit `{{ .Token }}` verified client-side via `verifyOtp({ type: "email" })`; the link is just a fallback.
+
 ## Roadmap
 
 All 10 cluster tools are shipped. What's next is the publish epic in phases:
 
-1. **Phase 1 — Auth + handle claim (LIVE).** Magic-link sign-in, slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`. Shipped 2026-06-09.
+1. **Phase 1 — Auth + handle claim (LIVE).** OTP-code sign-in (Resend SMTP, 6-digit `{{ .Token }}`, magic link as fallback), slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`, `/account` + `/claim/` blocked in both `robots.ts` and per-page metadata. Shipped 2026-06-09.
 2. **Phase 2 — The actual published page.** Dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the existing `ResumeSite` component; "Publish" wired to `PATCH /api/slugs/[slug]`; settings panel for headline / theme / contact links / photo / unpublish; re-upload + re-parse + overwrite as the resume edit path. Schema columns already in place — zero migration.
 3. **Phase 3 — Hardening.** Owner-only delete/unpublish, rate-limit `POST`/`PATCH` via Upstash, sitemap inclusion for published profiles, robots block on `/account` + `/claim`, GDPR one-click purge, slug squat TTL.
 4. **SEO & distribution.** GSC + IndexNow submitted (2026-06-08). Per-launch distribution per the plan: IH, r/resumes, r/cscareerquestions, Show HN, Product Hunt.
