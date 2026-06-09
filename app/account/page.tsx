@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ claimed?: string; error?: string; slug?: string }>;
+  searchParams: Promise<{ claimed?: string; published?: string; error?: string; slug?: string }>;
 }) {
-  const { claimed, error, slug: errSlug } = await searchParams;
+  const { claimed, published, error, slug: errSlug } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/signup?next=/account");
@@ -42,8 +42,15 @@ export default async function AccountPage({
           marginBottom: 20, padding: "12px 16px", borderRadius: 10,
           background: "var(--panel)", border: "1px solid var(--accent)", color: "var(--text)",
         }}>
-          ✓ Reserved <strong>viberesume.in/{claimed}</strong>.
-          Publishing comes next — we’ll email you when it’s ready.
+          ✓ Reserved <strong>viberesume.in/{claimed}</strong>. Generate a website from your PDF and publish it next.
+        </div>
+      )}
+      {published && (
+        <div role="status" style={{
+          marginBottom: 20, padding: "12px 16px", borderRadius: 10,
+          background: "var(--panel)", border: "1px solid var(--accent)", color: "var(--text)",
+        }}>
+          ✓ Published to <strong><Link href={`/${published}`} style={{ color: "var(--accent)" }}>viberesume.in/{published}</Link></strong>.
         </div>
       )}
       {error && (
@@ -94,9 +101,24 @@ export default async function AccountPage({
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>viberesume.in/{s.slug}</div>
                   <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
-                    {s.published_at ? "Live" : "Reserved · publishing coming soon"}
+                    {s.published_at ? "Live" : "Reserved · not published yet"}
                   </div>
                 </div>
+                {s.published_at ? (
+                  <Link
+                    href={`/${s.slug}`}
+                    style={{ color: "var(--accent)", fontWeight: 600, fontSize: 14 }}
+                  >
+                    View live →
+                  </Link>
+                ) : (
+                  <Link
+                    href="/tools/pdf-resume-to-website"
+                    style={{ color: "var(--accent)", fontWeight: 600, fontSize: 14 }}
+                  >
+                    Publish →
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

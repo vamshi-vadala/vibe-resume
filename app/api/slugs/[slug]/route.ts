@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
 import { checkSlugLocal, type SlugStatus } from "@/lib/slugAvailability.ts";
+import { validatePublishPayload } from "@/lib/publish.ts";
 
 // REST resource for a single slug. Phase 1 uses GET + POST. Phase 2 will add
 // PATCH (publish / update resume_data + theme_id). Phase 3 will add DELETE
@@ -67,6 +68,51 @@ export async function POST(_req: Request, ctx: Ctx): Promise<NextResponse> {
   return NextResponse.json({ status: "reserved", slug }, { status: 201 });
 }
 
-// PATCH: Phase 2 — publish or update resume_data/theme_id on an owned slug.
+// PATCH: publish or update resume_data on an owned slug. Body is the full
+// PublishPayload (resume + photoUrl + themeId). Sets published_at on first
+// publish; always bumps updated_at.
+export async function PATCH(req: Request, ctx: Ctx): Promise<NextResponse> {
+  const { slug: raw } = await ctx.params;
+  const slug = raw.toLowerCase();
+
+  let body: unknown;
+  try { body = await req.json(); }
+  catch { return NextResponse.json({ error: "bad_json" }, { status: 400 }); }
+
+  const validated = validatePublishPayload(body);
+  if (!validated.ok) {
+    return NextResponse.json({ error: validated.reason }, { status: 400 });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+  // Confirm ownership before any write.
+  const { data: row, error: lookupErr } = await supabase
+    .from("slugs")
+    .select("user_id, published_at")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (lookupErr) return NextResponse.json({ error: "lookup_failed" }, { status: 500 });
+  if (!row) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (row.user_id !== user.id) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const admin = createSupabaseAdminClient();
+  const now = new Date().toISOString();
+  const { error: updErr } = await admin
+    .from("slugs")
+    .update({
+      resume_data: validated.payload,
+      theme_id: validated.payload.themeId || null,
+      published_at: row.published_at ?? now,
+      updated_at: now,
+    })
+    .eq("slug", slug);
+
+  if (updErr) return NextResponse.json({ error: "update_failed" }, { status: 500 });
+  return NextResponse.json({ status: "published", slug });
+}
+
 // DELETE: Phase 3 — unpublish or release reservation (RLS slugs_delete_own
 //   already permits this once the handler is added).

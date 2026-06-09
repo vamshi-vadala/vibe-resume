@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import posthog from "posthog-js";
 import { parseResume, linesFromItems, SAMPLE_RESUME_TEXT, type ResumeData, type PositionedItem, type TextLine } from "@/lib/resume";
-import { THEMES, getTheme, themeStyle } from "@/lib/themes.ts";
+import { THEMES } from "@/lib/themes.ts";
 import NextSteps from "../../NextSteps";
+import ResumeSite from "./ResumeSite";
 import styles from "./converter.module.css";
+
+const PUBLISH_STASH_KEY = "vr.publish.pending";
 
 const TOOL_SLUG = "pdf-resume-to-website";
 const SIGNUP = `/signup?utm_source=tool&utm_campaign=${TOOL_SLUG}`;
@@ -196,9 +199,21 @@ export default function Converter() {
     track("tool_completed", { ok: true, source: "sample", sections: parsed.sections.length });
   }
 
-  function goSignup(placement: string) {
+  function goPublish(placement: string) {
     track("cta_clicked", { placement });
-    window.location.href = SIGNUP;
+    if (!data) { window.location.href = SIGNUP; return; }
+    try {
+      sessionStorage.setItem(
+        PUBLISH_STASH_KEY,
+        JSON.stringify({ resume: data, photoUrl, themeId }),
+      );
+    } catch {
+      // sessionStorage can throw (Safari private mode, quota, etc.) — fall back
+      // to the signup decoy rather than blocking the user.
+      window.location.href = SIGNUP;
+      return;
+    }
+    window.location.href = "/account/publish";
   }
 
   return (
@@ -265,7 +280,7 @@ export default function Converter() {
 
           {/* evident primary action */}
           <div className={styles.actions}>
-            <button className={`${styles.btn} ${styles.accent} ${styles.btnLg}`} onClick={() => goSignup("result_actions")}>
+            <button className={`${styles.btn} ${styles.accent} ${styles.btnLg}`} onClick={() => goPublish("result_actions")}>
               Publish this website →
             </button>
           </div>
@@ -274,7 +289,7 @@ export default function Converter() {
           <NextSteps from="pdf-resume-to-website" />
           <div className={styles.cta}>
             <p>Your website is ready — publish it with your own URL in 1 click.</p>
-            <button className={`${styles.btn} ${styles.primary}`} onClick={() => goSignup("sticky_result")}>
+            <button className={`${styles.btn} ${styles.primary}`} onClick={() => goPublish("sticky_result")}>
               Publish on Vibe Resume
             </button>
           </div>
@@ -284,73 +299,6 @@ export default function Converter() {
   );
 }
 
-/** The generated personal website — a single polished, responsive template. */
-function ResumeSite({ data, photoUrl, themeId }: { data: ResumeData; photoUrl: string; themeId: string }) {
-  const style = themeId ? (themeStyle(getTheme(themeId)) as React.CSSProperties) : undefined;
-  return (
-    <article className={styles.site} style={style}>
-      <header className={styles.siteHero}>
-        {photoUrl
-          ? <img src={photoUrl} alt={data.name} className={styles.avatarPhoto} />
-          : <div className={styles.avatar} aria-hidden>{initials(data.name)}</div>
-        }
-        <div>
-          <h1 className={styles.siteName}>{data.name}</h1>
-          {data.title && <p className={styles.siteRole}>{data.title}</p>}
-          {data.contactLines.length > 0 && (
-            <p className={styles.siteContact}>{data.contactLines.join("  ·  ")}</p>
-          )}
-        </div>
-      </header>
-
-      {data.summary && (
-        <section className={styles.siteSection}>
-          <h2 className={styles.siteH2}>About</h2>
-          <p className={styles.siteSummary}>{data.summary}</p>
-        </section>
-      )}
-
-      {data.skills.length > 0 && (
-        <section className={styles.siteSection}>
-          <h2 className={styles.siteH2}>Skills</h2>
-          <div className={styles.chips}>
-            {data.skills.map((s, i) => <span key={i} className={styles.chip}>{s}</span>)}
-          </div>
-        </section>
-      )}
-
-      {data.sections.map((sec, i) => (
-        <section key={i} className={styles.siteSection}>
-          <h2 className={styles.siteH2}>{sec.heading}</h2>
-          {sec.entries ? (
-            sec.entries.map((e, n) => (
-              <div key={n} className={styles.siteEntry}>
-                <div className={styles.siteEntryHead}>
-                  {e.header && <span className={styles.siteEntryTitle}>{e.header}</span>}
-                  {e.meta && <span className={styles.siteEntryMeta}>{e.meta}</span>}
-                </div>
-                {e.bullets.length > 0 && (
-                  <ul className={styles.siteList}>
-                    {e.bullets.map((b, k) => <li key={k}>{b}</li>)}
-                  </ul>
-                )}
-              </div>
-            ))
-          ) : (
-            <ul className={styles.siteList}>
-              {sec.items.map((it, n) => <li key={n}>{it}</li>)}
-            </ul>
-          )}
-        </section>
-      ))}
-    </article>
-  );
-}
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "·";
-}
 function slug(name: string) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "you";
 }

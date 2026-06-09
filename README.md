@@ -93,7 +93,15 @@ The real Phase-1 surface behind every "Publish" CTA: sign in with a 6-digit emai
 - **Slug claim flow** — the handle checker (`/tools/portfolio-handle-checker`) shows truthful Vibe Resume availability alongside the GitHub row by calling `GET /api/slugs/[slug]`. The "Claim viberesume.in/{handle}" CTA routes through `/claim/[slug]` — a server component that auth-gates with `?next=/claim/{slug}`, runs the insert via the service-role client, and redirects to `/account?claimed={slug}` with a success banner (or `?error=taken|reserved|invalid` if it can't).
 - **REST resource** — `/api/slugs/[slug]` is the canonical resource: `GET` returns availability (`available` / `taken` / `reserved` / `invalid`); `POST` claims for the signed-in user. `PATCH` (Phase 2: publish + update `resume_data`/`theme_id`) and `DELETE` (Phase 3: unpublish/release) are noted stubs so the route shape never has to be renamed.
 - **Reserved slugs** — `lib/reservedSlugs.ts` derives a denylist from `lib/tools.ts` + static framework / auth / marketing / system paths; checked at the app layer so adding a tool slug never needs a migration. `lib/slugAvailability.ts` is the pure shared format/length/reserved check (`SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/`, `SLUG_MIN=3`, `SLUG_MAX=30`) used by both the GET endpoint and any future caller.
-- **Account page** — `/account` lists reserved handles and a sign-out button; `robots: { index: false }`. Both `/account` and `/claim/` are also disallowed in `robots.ts` (belt-and-suspenders against crawl-budget waste); `/claim/[slug]` carries the same `robots: { index: false, follow: false }` metadata as defense in depth even though it only ever returns redirects.
+- **Account page** — `/account` lists reserved handles with a "View live →" link for each published slug (and a "Publish →" link for any reserved-but-not-yet-published one), plus a sign-out button; `robots: { index: false }`. Both `/account` and `/claim/` are also disallowed in `robots.ts` (belt-and-suspenders against crawl-budget waste); `/claim/[slug]` carries the same `robots: { index: false, follow: false }` metadata as defense in depth even though it only ever returns redirects.
+
+### Publish flow — `/account/publish` + `app/[slug]/page.tsx` (Phase 2 slice 1)
+
+The minimum-viable publish path. From the PDF tool's result, clicking **Publish** stashes `{ resume, photoUrl, themeId }` in `sessionStorage` (key `vr.publish.pending`) and routes to `/account/publish`. That page is auth-gated: if there are no claimed handles it sends the user to the handle checker; if there's one it offers a single-button publish; if multiple, a radio picker. Submit `PATCH`es `/api/slugs/[slug]` with the payload, server-side validates via `lib/publish.ts` (300KB cap, deep shape check, must own the row), and writes `resume_data` + `published_at`/`updated_at`. On success the stash is cleared and the user lands at `/account?published={slug}` with a success banner.
+
+The public profile lives at `app/[slug]/page.tsx`. It's a dynamic catch-all whose match order sits *behind* every static segment (`tools/`, `signup`, `account`, etc.) plus every entry in `RESERVED_SLUGS`, so user handles never collide with platform routes. It re-runs `validatePublishPayload` against the stored JSONB (defensive — schemas drift), returns `notFound()` if missing / unpublished / invalid, and renders via the shared `ResumeSite` component (extracted from `Converter.tsx` so the in-browser preview and the live page are the exact same render). Per-profile `<title>` / OG / canonical metadata are generated from `resume.name + title`.
+
+The only edit path today is re-publish (overwrites). Settings panel, unpublish, theme switching from `/account`, and rate-limiting `PATCH` are deferred to slice 2+.
 
 ### Supabase data model
 
@@ -136,7 +144,9 @@ app/
   auth/callback/route.ts      # magic-link return — exchanges code for session, redirects to ?next
   claim/[slug]/page.tsx       # server-side slug claim landing (auth-gates + inserts)
   account/                    # signed-in user dashboard (handles + sign-out)
-  api/slugs/[slug]/route.ts   # GET availability / POST claim (PATCH+DELETE stubs for Phase 2/3)
+  account/publish/            # Phase 2 publish landing (reads sessionStorage stash + PATCHes)
+  [slug]/page.tsx             # public profile route — SSR-renders published resume_data
+  api/slugs/[slug]/route.ts   # GET availability / POST claim / PATCH publish (DELETE stub for Phase 3)
   tools/<slug>/               # one dir per tool:
     page.tsx                  #   metadata + JSON-LD + how-it-works + cross-links + FAQ
     <Client>.tsx              #   "use client" tool UI (Converter / Deck / Generator / …)
@@ -149,6 +159,7 @@ lib/
   themes.ts slug.ts aboutme.ts qr.ts casestudy.ts handle.ts   # tools #4,#5,#6,#8,#9,#10
   supabase/{client,server,admin}.ts   # SSR-aware Supabase clients (browser anon / server cookies / service-role)
   reservedSlugs.ts slugAvailability.ts # slug denylist + pure availability check (format/length/reserved)
+  publish.ts                  # PublishPayload type + pure validator for PATCH /api/slugs/[slug] body
 public/
   pdf.worker.min.mjs          # self-hosted pdf.js worker (see note below)
 test/                         # *.unit.test.ts — pure-logic unit tests (Node runner)
@@ -235,6 +246,6 @@ Replaces the deleted `/api/waitlist` Upstash setup. The anon key is public by de
 All 10 cluster tools are shipped. What's next is the publish epic in phases:
 
 1. **Phase 1 — Auth + handle claim (LIVE).** OTP-code sign-in (Resend SMTP, 6-digit `{{ .Token }}`, magic link as fallback), slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`, `/account` + `/claim/` blocked in both `robots.ts` and per-page metadata. Shipped 2026-06-09.
-2. **Phase 2 — The actual published page.** Dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the existing `ResumeSite` component; "Publish" wired to `PATCH /api/slugs/[slug]`; settings panel for headline / theme / contact links / photo / unpublish; re-upload + re-parse + overwrite as the resume edit path. Schema columns already in place — zero migration.
+2. **Phase 2 — The actual published page.** **Slice 1 LIVE:** dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the shared `ResumeSite` component; PDF tool's "Publish" wired to `PATCH /api/slugs/[slug]` via a `sessionStorage` stash → `/account/publish`; account page shows View-live / Publish links per handle. **Slice 2 (next):** settings panel for headline / theme / contact links / photo / unpublish; theme switching from `/account`; tightening the anon SELECT policy on `slugs` to only expose `resume_data` when `published_at IS NOT NULL`. **Slice 3:** rate-limiting `PATCH` via Upstash, sitemap inclusion for published profiles, slug squat TTL.
 3. **Phase 3 — Hardening.** Owner-only delete/unpublish, rate-limit `POST`/`PATCH` via Upstash, sitemap inclusion for published profiles, robots block on `/account` + `/claim`, GDPR one-click purge, slug squat TTL.
 4. **SEO & distribution.** GSC + IndexNow submitted (2026-06-08). Per-launch distribution per the plan: IH, r/resumes, r/cscareerquestions, Show HN, Product Hunt.
