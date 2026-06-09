@@ -2,9 +2,9 @@
 
 A suite of free, SEO-driven micro-tools that turn resumes and profiles into shareable web pages — each tool an indexed landing page that funnels to the Vibe Resume product.
 
-This repo is the implementation of that programmatic-SEO plan. **All 10 tools in the cluster are live**, plus a goal-grouped landing page, global navigation, a System/Light/Dark theme toggle, magic-link sign-in with handle reservations, and the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) every tool shares.
+This repo is the implementation of that programmatic-SEO plan. **All 10 tools in the cluster are live**, plus a goal-grouped landing page, global navigation, a System/Light/Dark theme toggle, OTP-code sign-in, handle reservations, and a **real publish surface** at `viberesume.in/{handle}` for the three site-producing tools (PDF Resume → Website, Developer Resume → Portfolio, GitHub → Portfolio). Plus the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) every tool shares.
 
-Every **tool** runs client-side and static. The publish surface adds a thin server layer: Supabase Auth + Postgres for sign-in and handle reservations, and three small route handlers (`/auth/callback`, `/api/slugs/[slug]`, `/claim/[slug]`) plus two dynamic server pages (`/signup`, `/account`).
+Every **tool** runs client-side and static. The publish surface adds a thin server layer: Supabase Auth + Postgres for sign-in and handle reservations, and a few small route handlers (`/auth/callback`, `/api/slugs/[slug]` with GET/POST/PATCH/DELETE, `/claim/[slug]`) plus the dynamic server pages (`/signup`, `/account`, `/account/publish`, `/account/[slug]/settings`, public `/[slug]`).
 
 ## The tools
 
