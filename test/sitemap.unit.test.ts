@@ -5,8 +5,9 @@ import assert from "node:assert/strict";
 import sitemap from "../app/sitemap.ts";
 import { TOOLS } from "../lib/tools.ts";
 
-test("sitemap includes every tool exactly once, with no stale entries", () => {
-  const urls = sitemap().map((e) => e.url);
+test("sitemap includes every tool exactly once, with no stale entries", async () => {
+  // No Supabase env in the test runner → sitemap() returns the static list.
+  const urls = (await sitemap()).map((e) => e.url);
 
   // every registered tool's route is in the sitemap
   for (const t of TOOLS) {

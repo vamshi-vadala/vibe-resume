@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SignOutButton from "./SignOutButton";
+import { ReleaseHandleButton, DeleteAccountButton } from "./DangerActions";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 
 export const metadata: Metadata = {
@@ -14,9 +15,9 @@ export const metadata: Metadata = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ claimed?: string; published?: string; unpublished?: string; error?: string; slug?: string }>;
+  searchParams: Promise<{ claimed?: string; published?: string; unpublished?: string; released?: string; error?: string; slug?: string }>;
 }) {
-  const { claimed, published, unpublished, error, slug: errSlug } = await searchParams;
+  const { claimed, published, unpublished, released, error, slug: errSlug } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/signup?next=/account");
@@ -87,6 +88,14 @@ export default async function AccountPage({
           Unpublished <strong>viberesume.in/{unpublished}</strong>. The handle is still yours — re-publish anytime from Edit.
         </div>
       )}
+      {released && (
+        <div role="status" style={{
+          marginBottom: 20, padding: "12px 16px", borderRadius: 10,
+          background: "var(--panel)", border: "1px solid var(--line)", color: "var(--text)",
+        }}>
+          Released <strong>viberesume.in/{released}</strong>. The page and its data are deleted; the handle is free to claim again.
+        </div>
+      )}
       {error && (
         <div role="alert" style={{
           marginBottom: 20, padding: "12px 16px", borderRadius: 10,
@@ -99,7 +108,8 @@ export default async function AccountPage({
             <>To change <strong>viberesume.in/{errSlug}</strong>, re-publish from the source tool. Only resume-site profiles have an in-app editor today.</>
           )}
           {error === "bad_data" && <>Couldn’t open <strong>viberesume.in/{errSlug}</strong> — stored data is malformed. Try re-publishing.</>}
-          {!["taken", "reserved", "invalid", "not_editable", "bad_data"].includes(error) && (
+          {error === "limit" && <>You’ve reached the handle limit. Release one you’re not using to claim <strong>{errSlug}</strong>.</>}
+          {!["taken", "reserved", "invalid", "not_editable", "bad_data", "limit"].includes(error) && (
             <>Couldn’t complete the claim — try again.</>
           )}
         </div>
@@ -151,6 +161,9 @@ export default async function AccountPage({
                     <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
                       {s.published_at ? `Live · ${meta.label}` : hasData ? `Unpublished · ${meta.label}` : "Reserved · not published yet"}
                     </div>
+                    <div style={{ marginTop: 6 }}>
+                      <ReleaseHandleButton slug={s.slug} />
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                     {s.published_at && (
@@ -173,6 +186,14 @@ export default async function AccountPage({
             })}
           </ul>
         )}
+      </section>
+
+      <section style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid var(--line)" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Danger zone</h2>
+        <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 12 }}>
+          Deleting your account permanently removes every handle, published page, and all stored data.
+        </p>
+        <DeleteAccountButton />
       </section>
     </main>
   );

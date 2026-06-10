@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
 import { checkSlugLocal } from "@/lib/slugAvailability.ts";
+import { claimSlug } from "@/lib/claims.ts";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -26,13 +26,10 @@ export default async function ClaimPage({ params }: Ctx) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/signup?next=${encodeURIComponent(`/claim/${slug}`)}`);
 
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("slugs").insert({ slug, user_id: user.id });
-
-  if (error) {
-    if (error.code === "23505") redirect(`/account?error=taken&slug=${slug}`);
-    redirect(`/account?error=insert_failed&slug=${slug}`);
-  }
+  const result = await claimSlug(user.id, slug);
+  if (result === "taken") redirect(`/account?error=taken&slug=${slug}`);
+  if (result === "limit") redirect(`/account?error=limit&slug=${slug}`);
+  if (result === "failed") redirect(`/account?error=insert_failed&slug=${slug}`);
 
   redirect(`/account?claimed=${slug}`);
 }

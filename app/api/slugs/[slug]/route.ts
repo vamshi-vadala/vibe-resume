@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
 import { checkSlugLocal, type SlugStatus } from "@/lib/slugAvailability.ts";
 import { validatePublishPayload } from "@/lib/publish.ts";
+import { claimSlug } from "@/lib/claims.ts";
 
 // REST resource for a single slug. Phase 1 uses GET + POST. Phase 2 will add
 // PATCH (publish / update resume_data + theme_id). Phase 3 will add DELETE
@@ -51,19 +52,10 @@ export async function POST(_req: Request, ctx: Ctx): Promise<NextResponse> {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  // Use admin client for the insert: we already verified the user above and
-  // we want a clean unique-violation error path, not RLS noise.
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin
-    .from("slugs")
-    .insert({ slug, user_id: user.id });
-
-  if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json({ status: "taken" }, { status: 409 });
-    }
-    return NextResponse.json({ error: "insert_failed" }, { status: 500 });
-  }
+  const result = await claimSlug(user.id, slug);
+  if (result === "taken") return NextResponse.json({ status: "taken" }, { status: 409 });
+  if (result === "limit") return NextResponse.json({ error: "limit" }, { status: 429 });
+  if (result === "failed") return NextResponse.json({ error: "insert_failed" }, { status: 500 });
 
   return NextResponse.json({ status: "reserved", slug }, { status: 201 });
 }
@@ -91,12 +83,23 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<NextResponse> {
   // Confirm ownership before any write.
   const { data: row, error: lookupErr } = await supabase
     .from("slugs")
-    .select("user_id, published_at")
+    .select("user_id, published_at, updated_at")
     .eq("slug", slug)
     .maybeSingle();
   if (lookupErr) return NextResponse.json({ error: "lookup_failed" }, { status: 500 });
   if (!row) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (row.user_id !== user.id) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  // Minimal anti-abuse: re-publishes of an already-live page must be ≥10s
+  // apart. First publish after a claim is never throttled (published_at null).
+  // Per-instance only — swap for Upstash if real abuse shows up.
+  if (
+    row.published_at &&
+    row.updated_at &&
+    Date.now() - Date.parse(row.updated_at) < 10_000
+  ) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   const admin = createSupabaseAdminClient();
   const now = new Date().toISOString();
@@ -114,12 +117,16 @@ export async function PATCH(req: Request, ctx: Ctx): Promise<NextResponse> {
   return NextResponse.json({ status: "published", slug });
 }
 
-// DELETE: unpublish — clears published_at but KEEPS the reservation and
-// resume_data so the user can re-publish later. Releasing the handle entirely
-// (actual row delete) is a separate Phase 3 affordance.
-export async function DELETE(_req: Request, ctx: Ctx): Promise<NextResponse> {
+// DELETE: two modes, both owner-only.
+//   default      → unpublish: clears published_at, KEEPS the reservation and
+//                  resume_data so the user can re-publish later.
+//   ?release=1   → release: deletes the row entirely (resume_data + photo are
+//                  stored inline, so the row delete is the full purge) and
+//                  frees the handle for anyone to claim.
+export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
   const { slug: raw } = await ctx.params;
   const slug = raw.toLowerCase();
+  const release = new URL(req.url).searchParams.get("release") === "1";
 
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -135,6 +142,13 @@ export async function DELETE(_req: Request, ctx: Ctx): Promise<NextResponse> {
   if (row.user_id !== user.id) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const admin = createSupabaseAdminClient();
+
+  if (release) {
+    const { error: delErr } = await admin.from("slugs").delete().eq("slug", slug);
+    if (delErr) return NextResponse.json({ error: "release_failed" }, { status: 500 });
+    return NextResponse.json({ status: "released", slug });
+  }
+
   const { error: updErr } = await admin
     .from("slugs")
     .update({ published_at: null, updated_at: new Date().toISOString() })
