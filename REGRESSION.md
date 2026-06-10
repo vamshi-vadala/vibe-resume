@@ -161,9 +161,10 @@ Verify the de-decoy sweep stuck. None of these tools should render a
   - `<link rel="canonical" href="https://viberesume.in/{slug}">`
   - `<meta property="og:title">` + `og:description` match
 - 👁 `viberesume.in/sitemap.xml` — loads, lists tools + legal
-  pages. (Published profiles not yet included — that's Phase 3.)
+  pages + published profiles (Phase 3; hourly revalidate, so a
+  just-published profile can take up to an hour to appear).
 - 👁 `viberesume.in/robots.txt` — disallows `/api/`, `/account`,
-  `/claim/`.
+  `/auth/`, `/claim/`.
 
 ### 15. RLS boundary check (≤2 min)
 This is the kind of check that's awkward to automate but catches a
@@ -200,6 +201,24 @@ of this, but does it on a stub.)
 - 👁 The stashed resume should still be in sessionStorage and the
   publish should complete on /account/publish. Confirms the
   signin-detour preserves the publish intent.
+
+### 18. Phase 3 destructive actions (≤3 min)
+Use a throwaway handle for this — these delete real data.
+- 👁 `/account` → **Release handle** on an unneeded slug → confirm
+  dialog → banner "Released viberesume.in/{slug}". Public URL 404s;
+  handle checker shows it available again.
+- 👁 **Unpublish vs release are distinct:** unpublish (step 5) keeps
+  the row + data; release deletes it. Verify an unpublished handle
+  still shows Edit, not Claim.
+- 👁 With a second throwaway account: **Danger zone → Delete account
+  & data** → confirm → lands on `/`. Signing in again with that email
+  creates a fresh empty account (no handles).
+- 👁 Claim cap: an account at 5 handles gets the "handle limit"
+  error banner on a 6th claim, not a silent failure.
+- 👁 Cron auth: `curl -s -o /dev/null -w "%{http_code}" \
+  https://viberesume.in/api/cron/reap-slugs` → **401** (unauthenticated
+  callers always rejected). Vercel → Settings → Cron Jobs shows the
+  daily 04:00 UTC job; its last run is green.
 
 ---
 
