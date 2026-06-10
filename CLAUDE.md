@@ -2,7 +2,7 @@
 
 # Vibe Resume
 
-Static-first Next.js 16 (App Router) site — 10 free resume/portfolio tools + real publish flow (Supabase auth, `viberesume.in/{slug}`). Live at https://viberesume.in. **README.md is the source of truth** — read the relevant section before changing product behavior, and update it (without being asked) as part of every shipped change.
+Static-first Next.js 16 (App Router) site — 10 free resume/portfolio tools + real publish flow (Supabase auth, `viberesume.in/{slug}`). Live at https://viberesume.in. **README.md is the source of truth** — read the relevant section before changing product behavior, and update it (without being asked) as part of every shipped change. **REGRESSION.md** (2-tier manual regression checklist: smoke pre-push, full pre-milestone) gets the same treatment — any change to a user-facing flow updates its steps in the same commit.
 
 ## Commands
 - `npm run build` — REQUIRED locally before every push (no TS gate in CI; Vercel build is conditional)

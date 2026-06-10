@@ -2,70 +2,97 @@
 
 import { useState } from "react";
 
-// Owner-only destructive actions for /account. Both confirm before acting and
+// Owner-only destructive actions for /account. Instead of window.confirm,
+// each uses an inline two-step confirm: first click arms the button (label
+// swaps to the consequence + a Cancel appears), second click executes. All
 // hard-navigate afterwards so the server component re-reads fresh state.
 
-export function ReleaseHandleButton({ slug }: { slug: string }) {
-  const [busy, setBusy] = useState(false);
+const linkBtn: React.CSSProperties = {
+  background: "none", border: "none", padding: 0, cursor: "pointer",
+  fontSize: 13, textDecoration: "underline",
+};
 
-  async function release() {
-    const ok = window.confirm(
-      `Release viberesume.in/${slug}?\n\nThis permanently deletes the page and its data, and anyone will be able to claim the handle. This can't be undone.`
-    );
-    if (!ok) return;
+function useAction(run: () => Promise<Response>, onOk: () => void, failMsg: string) {
+  const [armed, setArmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function click() {
+    if (!armed) { setArmed(true); return; }
     setBusy(true);
-    const res = await fetch(`/api/slugs/${slug}?release=1`, { method: "DELETE" });
-    if (res.ok) window.location.href = `/account?released=${slug}`;
+    setError("");
+    const res = await run().catch(() => null);
+    if (res?.ok) onOk();
     else {
       setBusy(false);
-      window.alert("Couldn't release the handle — try again.");
+      setArmed(false);
+      setError(failMsg);
     }
   }
+  return { armed, busy, error, click, cancel: () => setArmed(false) };
+}
 
+export function UnpublishHandleButton({ slug }: { slug: string }) {
+  const a = useAction(
+    () => fetch(`/api/slugs/${slug}`, { method: "DELETE" }),
+    () => { window.location.href = `/account?unpublished=${slug}`; },
+    "Couldn’t unpublish — try again."
+  );
   return (
-    <button
-      type="button"
-      onClick={release}
-      disabled={busy}
-      style={{
-        background: "none", border: "none", padding: 0, cursor: "pointer",
-        color: "var(--muted)", fontSize: 13, textDecoration: "underline",
-      }}
-    >
-      {busy ? "Releasing…" : "Release handle"}
-    </button>
+    <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+      <button type="button" onClick={a.click} disabled={a.busy}
+        style={{ ...linkBtn, color: a.armed ? "var(--text)" : "var(--muted)", fontWeight: a.armed ? 600 : 400 }}>
+        {a.busy ? "Unpublishing…" : a.armed ? "Take the page down? Data is kept" : "Unpublish"}
+      </button>
+      {a.armed && !a.busy && (
+        <button type="button" onClick={a.cancel} style={{ ...linkBtn, color: "var(--muted)" }}>Cancel</button>
+      )}
+      {a.error && <span role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 13 }}>{a.error}</span>}
+    </span>
+  );
+}
+
+export function ReleaseHandleButton({ slug }: { slug: string }) {
+  const a = useAction(
+    () => fetch(`/api/slugs/${slug}?release=1`, { method: "DELETE" }),
+    () => { window.location.href = `/account?released=${slug}`; },
+    "Couldn’t release the handle — try again."
+  );
+  return (
+    <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+      <button type="button" onClick={a.click} disabled={a.busy}
+        style={{ ...linkBtn, color: a.armed ? "var(--danger, #e5484d)" : "var(--muted)", fontWeight: a.armed ? 600 : 400 }}>
+        {a.busy ? "Releasing…" : a.armed ? "Permanently delete page + data and free the handle?" : "Release handle"}
+      </button>
+      {a.armed && !a.busy && (
+        <button type="button" onClick={a.cancel} style={{ ...linkBtn, color: "var(--muted)" }}>Cancel</button>
+      )}
+      {a.error && <span role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 13 }}>{a.error}</span>}
+    </span>
   );
 }
 
 export function DeleteAccountButton() {
-  const [busy, setBusy] = useState(false);
-
-  async function purge() {
-    const ok = window.confirm(
-      "Delete your account?\n\nThis permanently deletes every handle you've reserved, every published page, and your sign-in. This can't be undone."
-    );
-    if (!ok) return;
-    setBusy(true);
-    const res = await fetch("/api/account", { method: "DELETE" });
-    if (res.ok) window.location.href = "/";
-    else {
-      setBusy(false);
-      window.alert("Couldn't delete the account — try again.");
-    }
-  }
-
+  const a = useAction(
+    () => fetch("/api/account", { method: "DELETE" }),
+    () => { window.location.href = "/"; },
+    "Couldn’t delete the account — try again."
+  );
   return (
-    <button
-      type="button"
-      onClick={purge}
-      disabled={busy}
-      style={{
-        padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 14,
-        background: "transparent", color: "var(--danger, #e5484d)",
-        border: "1px solid var(--danger, #e5484d)", fontWeight: 600,
-      }}
-    >
-      {busy ? "Deleting…" : "Delete account & data"}
-    </button>
+    <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <button type="button" onClick={a.click} disabled={a.busy}
+        style={{
+          padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 600,
+          background: a.armed ? "var(--danger, #e5484d)" : "transparent",
+          color: a.armed ? "#fff" : "var(--danger, #e5484d)",
+          border: "1px solid var(--danger, #e5484d)",
+        }}>
+        {a.busy ? "Deleting…" : a.armed ? "Permanently delete everything — confirm" : "Delete account & data"}
+      </button>
+      {a.armed && !a.busy && (
+        <button type="button" onClick={a.cancel} style={{ ...linkBtn, color: "var(--muted)", fontSize: 14 }}>Cancel</button>
+      )}
+      {a.error && <span role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 13 }}>{a.error}</span>}
+    </div>
   );
 }

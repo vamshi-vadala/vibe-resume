@@ -9,8 +9,9 @@ import GhPortfolio from "../tools/github-to-portfolio/GhPortfolio";
 
 // Public profile at viberesume.in/{slug}. Static segments under app/ (tools/,
 // signup, account, etc.) and reserved slugs (lib/reservedSlugs.ts) win first
-// — this only matches user-claimed handles. notFound() if missing, unowned,
-// or not yet published.
+// — this only matches user-claimed handles. A valid-but-unclaimed slug
+// renders a noindex "claim this handle" invite; claimed-but-unpublished or
+// invalid slugs 404.
 //
 // Reads via the service-role client because the anon role no longer has SELECT
 // on the `resume_data` column. This page itself filters `published_at IS NOT
@@ -21,21 +22,24 @@ import GhPortfolio from "../tools/github-to-portfolio/GhPortfolio";
 //   "github"    → GhPortfolio (GitHub username tool)
 
 type Ctx = { params: Promise<{ slug: string }> };
-type Loaded = { slug: string; payload: PublishPayload };
+type Loaded =
+  | { kind: "profile"; slug: string; payload: PublishPayload }
+  | { kind: "claimable"; slug: string } // valid, unreserved, unclaimed → invite
+  | null;                               // invalid/reserved/claimed-but-hidden → 404
 
-async function loadProfile(slug: string): Promise<Loaded | null> {
+async function loadProfile(slug: string): Promise<Loaded> {
   if (checkSlugLocal(slug)) return null;
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("slugs")
     .select("slug, resume_data, published_at")
     .eq("slug", slug)
-    .not("published_at", "is", null)
     .maybeSingle();
-  if (!data || !data.resume_data) return null;
+  if (!data) return { kind: "claimable", slug };
+  if (!data.published_at || !data.resume_data) return null;
   const validated = validatePublishPayload(data.resume_data);
   if (!validated.ok) return null;
-  return { slug: data.slug, payload: validated.payload };
+  return { kind: "profile", slug: data.slug, payload: validated.payload };
 }
 
 function nameForMeta(p: PublishPayload): string {
@@ -61,6 +65,13 @@ export async function generateMetadata({ params }: Ctx): Promise<Metadata> {
   const slug = raw.toLowerCase();
   const loaded = await loadProfile(slug);
   if (!loaded) return { title: "Not found — Vibe Resume" };
+  if (loaded.kind === "claimable") {
+    // Acquisition page for a free handle — useful to humans, noise to crawlers.
+    return {
+      title: `Claim viberesume.in/${slug} — Vibe Resume`,
+      robots: { index: false, follow: false },
+    };
+  }
   const title = titleForMeta(loaded.payload);
   const desc = descForMeta(loaded.payload).slice(0, 160);
   return {
@@ -77,6 +88,34 @@ export default async function PublicProfilePage({ params }: Ctx) {
   const loaded = await loadProfile(slug);
   if (!loaded) notFound();
 
+  if (loaded.kind === "claimable") {
+    return (
+      <main style={{ maxWidth: 560, margin: "0 auto", padding: "96px 24px", textAlign: "center" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 10 }}>
+          viberesume.in/{slug} is available
+        </h1>
+        <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 24 }}>
+          Nobody has claimed this handle yet. Make it yours and publish your resume or portfolio here — free.
+        </p>
+        <a
+          href={`/claim/${slug}`}
+          style={{
+            display: "inline-block", padding: "12px 22px", borderRadius: 10,
+            fontWeight: 700, fontSize: 15, background: "var(--accent2)",
+            color: "var(--on-accent2)", textDecoration: "none",
+          }}
+        >
+          Claim viberesume.in/{slug} →
+        </a>
+        <p style={{ marginTop: 18, fontSize: 14 }}>
+          <a href="/tools/portfolio-handle-checker" style={{ color: "var(--accent)" }}>
+            Check a different handle →
+          </a>
+        </p>
+      </main>
+    );
+  }
+
   const { payload } = loaded;
   return (
     <main style={{ maxWidth: 980, margin: "0 auto", padding: "32px 16px" }}>
@@ -89,6 +128,11 @@ export default async function PublicProfilePage({ params }: Ctx) {
       {payload.kind === "github" && (
         <GhPortfolio profile={payload.profile} />
       )}
+      <footer style={{ textAlign: "center", marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+        <a href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>
+          Made with <strong style={{ color: "var(--text)" }}>Vibe Resume</strong> · claim your free handle →
+        </a>
+      </footer>
     </main>
   );
 }

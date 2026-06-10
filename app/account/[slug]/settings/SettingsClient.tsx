@@ -44,6 +44,7 @@ export default function SettingsClient({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState("");
   const [unpublishing, setUnpublishing] = useState(false);
+  const [unpublishArmed, setUnpublishArmed] = useState(false);
 
   async function onPhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -93,8 +94,10 @@ export default function SettingsClient({
     router.refresh();
   }
 
+  // Two-step inline confirm (first click arms, second executes) — same
+  // pattern as the /account DangerActions, no native dialog.
   async function unpublish() {
-    if (!confirm(`Unpublish viberesume.in/${slug}? Your data is kept and you can re-publish anytime. The handle stays yours.`)) return;
+    if (!unpublishArmed) { setUnpublishArmed(true); return; }
     setUnpublishing(true);
     setError("");
     const res = await fetch(`/api/slugs/${slug}`, { method: "DELETE" });
@@ -273,7 +276,20 @@ export default function SettingsClient({
               cursor: unpublishing ? "default" : "pointer", marginLeft: "auto",
             }}
           >
-            {unpublishing ? "Unpublishing…" : "Unpublish"}
+            {unpublishing ? "Unpublishing…" : unpublishArmed ? "Take the page down? Data is kept — confirm" : "Unpublish"}
+          </button>
+        )}
+        {unpublishArmed && !unpublishing && (
+          <button
+            type="button"
+            onClick={() => setUnpublishArmed(false)}
+            style={{
+              padding: "12px 14px", borderRadius: 10, fontSize: 14,
+              background: "none", color: "var(--muted)", border: "none",
+              cursor: "pointer", textDecoration: "underline",
+            }}
+          >
+            Cancel
           </button>
         )}
       </div>

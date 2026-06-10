@@ -26,6 +26,13 @@ test so OTP rate limits don't bite.
 
 Run before every `git push` to main that touches anything user-facing.
 
+### 0. Public-slug surfaces (≤1 min)
+- 👁 A published profile shows the "Made with Vibe Resume · claim
+  your free handle" footer linking home.
+- 👁 An unclaimed valid slug (e.g. `/definitely-free-handle-xyz`)
+  shows the "this handle is available — claim it" invite (noindex),
+  NOT a bare 404. A claimed-but-unpublished slug still 404s.
+
 ### 1. Anonymous homepage loads (≤30s)
 - 👁 Visit https://viberesume.in/ in a clean browser tab.
 - 👁 Header shows "Sign in" (not avatar). Three tool group sections
@@ -204,9 +211,16 @@ of this, but does it on a stub.)
 
 ### 18. Phase 3 destructive actions (≤3 min)
 Use a throwaway handle for this — these delete real data.
-- 👁 `/account` → **Release handle** on an unneeded slug → confirm
-  dialog → banner "Released viberesume.in/{slug}". Public URL 404s;
-  handle checker shows it available again.
+- 👁 All destructive buttons use a **two-step inline confirm**: first
+  click arms (label states the consequence + Cancel appears), second
+  click executes. No native dialogs anywhere.
+- 👁 `/account` → published rows show **Unpublish** (all kinds, not
+  just resume) AND **Release handle**; unpublish keeps the row,
+  release deletes it.
+- 👁 `/account` → **Release handle** on an unneeded slug → arm +
+  confirm → banner "Released viberesume.in/{slug}". The public URL now
+  shows the **claim invite** (released = unclaimed); handle checker
+  shows it available again.
 - 👁 **Unpublish vs release are distinct:** unpublish (step 5) keeps
   the row + data; release deletes it. Verify an unpublished handle
   still shows Edit, not Claim.

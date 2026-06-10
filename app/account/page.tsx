@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SignOutButton from "./SignOutButton";
-import { ReleaseHandleButton, DeleteAccountButton } from "./DangerActions";
+import { ReleaseHandleButton, UnpublishHandleButton, DeleteAccountButton } from "./DangerActions";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 
 export const metadata: Metadata = {
@@ -161,7 +161,8 @@ export default async function AccountPage({
                     <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
                       {s.published_at ? `Live · ${meta.label}` : hasData ? `Unpublished · ${meta.label}` : "Reserved · not published yet"}
                     </div>
-                    <div style={{ marginTop: 6 }}>
+                    <div style={{ marginTop: 6, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                      {s.published_at && <UnpublishHandleButton slug={s.slug} />}
                       <ReleaseHandleButton slug={s.slug} />
                     </div>
                   </div>
