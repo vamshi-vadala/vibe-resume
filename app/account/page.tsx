@@ -25,10 +25,10 @@ export default async function AccountPage({
   const { data: slugs } = await supabase
     .from("slugs")
     // Project only the discriminator + a name-ish field from resume_data so
-    // the dashboard doesn't pull a multi-KB JSONB per row. `resume_name`
-    // doubles as truthiness ("has any data yet?") for non-resume kinds it'll
-    // be null but `resume_kind` carries the dispatch signal.
-    .select("slug, created_at, published_at, resume_kind:resume_data->>kind, resume_name:resume_data->>name")
+    // the dashboard doesn't pull a multi-KB JSONB per row. The name lives
+    // nested per kind (resume->name / profile->name), so project both. Either
+    // name doubles as truthiness ("has any data yet?").
+    .select("slug, created_at, published_at, resume_kind:resume_data->>kind, resume_name:resume_data->resume->>name, profile_name:resume_data->profile->>name")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -134,7 +134,7 @@ export default async function AccountPage({
             {slugs.map((s) => {
               const kind = kindOf(s.resume_kind);
               const meta = KIND_LABEL[kind];
-              const hasData = !!s.resume_name;
+              const hasData = !!(s.resume_name || s.profile_name);
               const canEditInApp = kind === "resume" && hasData;
               const action = canEditInApp
                 ? { href: `/account/${s.slug}/settings`, label: "Edit →" }
