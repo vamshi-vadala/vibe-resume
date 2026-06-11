@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SignOutButton from "./SignOutButton";
+import PendingPublishNudge from "./PendingPublishNudge";
+import CopyLinkButton from "./CopyLinkButton";
 import { ReleaseHandleButton, UnpublishHandleButton, DeleteAccountButton } from "./DangerActions";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 
@@ -59,20 +61,33 @@ export default async function AccountPage({
           marginBottom: 20, padding: "12px 16px", borderRadius: 10,
           background: "var(--panel)", border: "1px solid var(--accent)", color: "var(--text)",
         }}>
-          ✓ Reserved <strong>viberesume.in/{claimed}</strong>. Generate a website from your PDF and publish it next.
+          ✓ Reserved <strong>viberesume.in/{claimed}</strong> — it’s yours. Publish a website to it whenever you’re ready.
         </div>
       )}
       {published && (() => {
         const row = slugs?.find((s) => s.slug === published);
         const isResume = kindOf(row?.resume_kind) === "resume";
+        const liveUrl = `https://viberesume.in/${published}`;
         return (
           <div role="status" style={{
-            marginBottom: 20, padding: "12px 16px", borderRadius: 10,
+            marginBottom: 20, padding: "18px 20px", borderRadius: 12,
             background: "var(--panel)", border: "1px solid var(--accent)", color: "var(--text)",
           }}>
-            <div>✓ Published to <strong>viberesume.in/{published}</strong>.</div>
-            <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 14 }}>
-              <Link href={`/${published}`} style={{ color: "var(--accent)", fontWeight: 600 }}>View live ↗</Link>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>🎉 Your website is live</div>
+            <a
+              href={liveUrl}
+              style={{
+                display: "inline-block", marginTop: 8, fontSize: 18, fontWeight: 700,
+                color: "var(--accent)", wordBreak: "break-all",
+              }}
+            >
+              viberesume.in/{published} ↗
+            </a>
+            <div style={{ display: "flex", gap: 14, marginTop: 12, fontSize: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <CopyLinkButton url={liveUrl} />
+              <Link href={`/tools/resume-qr-code-generator?url=${encodeURIComponent(liveUrl)}`} style={{ color: "var(--accent)", fontWeight: 600 }}>
+                Make a QR code →
+              </Link>
               {isResume && (
                 <Link href={`/account/${published}/settings`} style={{ color: "var(--accent)", fontWeight: 600 }}>Edit profile →</Link>
               )}
@@ -80,6 +95,7 @@ export default async function AccountPage({
           </div>
         );
       })()}
+      {!published && <PendingPublishNudge />}
       {unpublished && (
         <div role="status" style={{
           marginBottom: 20, padding: "12px 16px", borderRadius: 10,
@@ -116,17 +132,24 @@ export default async function AccountPage({
       )}
 
       <section>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>Your handles</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>Your site</h2>
         {!slugs || slugs.length === 0 ? (
-          <div style={{ padding: 24, border: "1px solid var(--line)", borderRadius: 12, background: "var(--panel)" }}>
-            <p style={{ color: "var(--muted)", marginBottom: 12 }}>
-              You haven’t reserved a handle yet. Pick one from the handle checker.
+          <div style={{ padding: 28, border: "1px solid var(--line)", borderRadius: 12, background: "var(--panel)" }}>
+            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 6px" }}>
+              Get your website live in two minutes
             </p>
-            <Link
-              href="/tools/portfolio-handle-checker"
-              style={{ color: "var(--accent)", fontWeight: 600 }}
-            >
-              Check a handle →
+            <ol style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.9, margin: "0 0 16px", paddingLeft: 20 }}>
+              <li>
+                <Link href="/tools/pdf-resume-to-website" style={{ color: "var(--accent)", fontWeight: 600 }}>
+                  Generate a website
+                </Link>{" "}
+                from your resume, GitHub or dev profile — free, in your browser.
+              </li>
+              <li>Hit <strong>Publish</strong> on the result and pick your handle.</li>
+              <li>Share <strong>viberesume.in/your-name</strong> anywhere.</li>
+            </ol>
+            <Link href="/example" style={{ color: "var(--accent)", fontSize: 14 }}>
+              See a live example ↗
             </Link>
           </div>
         ) : (
@@ -140,48 +163,64 @@ export default async function AccountPage({
                 ? { href: `/account/${s.slug}/settings`, label: "Edit →" }
                 : hasData
                   ? { href: meta.tool, label: "Re-publish from tool →" }
-                  : { href: "/tools/pdf-resume-to-website", label: "Publish →" };
+                  : { href: "/account/publish", label: "Publish →" };
+              const badge = s.published_at
+                ? { text: "Live", bg: "var(--accent2)", fg: "var(--on-accent2)", border: "var(--accent2)" }
+                : { text: hasData ? "Unpublished" : "Reserved", bg: "var(--panel2)", fg: "var(--muted)", border: "var(--line)" };
               return (
                 <li
                   key={s.slug}
                   style={{
-                    padding: "14px 18px",
+                    padding: "16px 20px",
                     border: "1px solid var(--line)",
                     borderRadius: 12,
                     background: "var(--panel)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: 12,
                   }}
                 >
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 16 }}>viberesume.in/{s.slug}</div>
-                    <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
-                      {s.published_at ? `Live · ${meta.label}` : hasData ? `Unpublished · ${meta.label}` : "Reserved · not published yet"}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, fontSize: 16, wordBreak: "break-all" }}>viberesume.in/{s.slug}</span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 999,
+                          background: badge.bg, color: badge.fg, border: `1px solid ${badge.border}`,
+                        }}>
+                          {badge.text}
+                        </span>
+                      </div>
+                      <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
+                        {(s.resume_name || s.profile_name) ? `${s.resume_name || s.profile_name} · ` : ""}{meta.label}
+                      </div>
                     </div>
-                    <div style={{ marginTop: 6, display: "flex", gap: 14, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                      {s.published_at && (
+                        <>
+                          <CopyLinkButton url={`https://viberesume.in/${s.slug}`} />
+                          <Link href={`/${s.slug}`} style={{ color: "var(--muted)", fontSize: 14 }}>
+                            View live ↗
+                          </Link>
+                        </>
+                      )}
+                      <Link
+                        href={action.href}
+                        style={{
+                          padding: "8px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700,
+                          background: "var(--accent2)", color: "var(--on-accent2)",
+                        }}
+                      >
+                        {action.label}
+                      </Link>
+                    </div>
+                  </div>
+                  {/* Destructive actions live behind a disclosure so the card
+                      reads as "your site", not a row of ways to delete it. */}
+                  <details style={{ marginTop: 10 }}>
+                    <summary style={{ cursor: "pointer", color: "var(--muted)", fontSize: 13 }}>Manage handle</summary>
+                    <div style={{ marginTop: 8, display: "flex", gap: 16, flexWrap: "wrap" }}>
                       {s.published_at && <UnpublishHandleButton slug={s.slug} />}
                       <ReleaseHandleButton slug={s.slug} />
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                    {s.published_at && (
-                      <Link
-                        href={`/${s.slug}`}
-                        style={{ color: "var(--muted)", fontSize: 14 }}
-                      >
-                        View live ↗
-                      </Link>
-                    )}
-                    <Link
-                      href={action.href}
-                      style={{ color: "var(--accent)", fontWeight: 600, fontSize: 14 }}
-                    >
-                      {action.label}
-                    </Link>
-                  </div>
+                  </details>
                 </li>
               );
             })}

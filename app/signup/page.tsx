@@ -20,14 +20,41 @@ export default async function SignupPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect(next || "/account");
 
+  // Funnel-aware copy: someone arriving from a tool's Publish button (or a
+  // claim link) is mid-task — acknowledge what they just made and where it is,
+  // instead of a generic sign-in wall that reads as "your work is gone."
+  const publishing = next?.startsWith("/account/publish") ?? false;
+  const claimSlug = next?.startsWith("/claim/")
+    ? decodeURIComponent(next.slice("/claim/".length)).split("?")[0]
+    : "";
+
   return (
     <main style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center", fontFamily: "inherit" }}>
       <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 16 }}>
-        Sign in to Vibe Resume
+        {publishing
+          ? "Your website is ready 🎉"
+          : claimSlug
+            ? <>Claim viberesume.in/{claimSlug}</>
+            : "Sign in to Vibe Resume"}
       </h1>
       <p style={{ color: "var(--muted)", fontSize: 17, lineHeight: 1.6, marginBottom: 32 }}>
-        Sign in or create your <strong>viberesume.in</strong> handle. We’ll email you a
-        6-digit code — no password.
+        {publishing ? (
+          <>
+            It’s saved in this browser — nothing is lost. Sign in with your email to
+            publish it to your own <strong>viberesume.in</strong> URL. We’ll send a
+            6-digit code — no password, no spam.
+          </>
+        ) : claimSlug ? (
+          <>
+            One step left: sign in with your email and the handle is yours. We’ll
+            send a 6-digit code — no password, no spam.
+          </>
+        ) : (
+          <>
+            Sign in or create your <strong>viberesume.in</strong> handle. We’ll email you a
+            6-digit code — no password.
+          </>
+        )}
       </p>
       <SignInForm next={next} />
       {error === "auth" && (

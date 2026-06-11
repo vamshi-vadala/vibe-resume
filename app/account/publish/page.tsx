@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
 import PublishClient from "./PublishClient";
 
@@ -28,22 +27,10 @@ export default async function PublishLandingPage() {
 
   return (
     <main style={{ maxWidth: 560, margin: "0 auto", padding: "64px 24px", fontFamily: "inherit" }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 12 }}>Publish your resume</h1>
-      {handles.length === 0 ? (
-        <>
-          <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 20 }}>
-            You haven’t reserved a viberesume.in handle yet. Pick one first — then come back to publish.
-          </p>
-          <Link
-            href="/tools/portfolio-handle-checker"
-            style={{ color: "var(--accent)", fontWeight: 600 }}
-          >
-            Check a handle →
-          </Link>
-        </>
-      ) : (
-        <PublishClient handles={handles.map((h) => ({ slug: h.slug, isLive: !!h.published_at }))} />
-      )}
+      <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 12 }}>Publish your website</h1>
+      {/* Zero-handle users get an inline claim step inside PublishClient —
+          never bounce them off this page mid-publish. */}
+      <PublishClient handles={handles.map((h) => ({ slug: h.slug, isLive: !!h.published_at }))} />
     </main>
   );
 }

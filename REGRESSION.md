@@ -39,6 +39,8 @@ Run before every `git push` to main that touches anything user-facing.
   render with tool cards.
 - 🤖 Theme toggle visible and clickable (`e2e/theme-toggle.spec.ts`).
 - 🤖 No console errors on landing (`e2e/home.spec.ts` axe).
+- 🤖 "See a live example ↗" trust link → `/example` renders the sample
+  resume site with a "Make yours free →" CTA (`e2e/example.spec.ts`).
 
 ### 2. Sign in via 6-digit code (≤2 min)
 - 👁 Click **Sign in** → `/signup`. Submit a fresh email.
@@ -55,12 +57,20 @@ Run before every `git push` to main that touches anything user-facing.
   click "Try a sample" if you don't have one handy).
 - 👁 Result renders inside the faux browser frame with name, theme
   chips, and an extracted photo (if the PDF had one).
-- 👁 Click **Publish this website →**. Should route to
-  `/account/publish`.
+- 👁 Result shows exactly ONE publish button ("Publish this website →")
+  plus a "See a live example ↗" link. No sticky CTA band below.
+- 👁 Click **Publish this website →**. Signed out: `/signup` heading
+  reads "Your website is ready 🎉" (saved-in-browser reassurance), NOT
+  the generic sign-in copy. Signed in: straight to `/account/publish`.
 - 👁 If you already have a claimed handle, single-button publish
-  fires. Otherwise it routes to the handle checker first.
-- 👁 Click publish → land on `/account?published=<slug>` with a
-  success banner offering **View live ↗** and **Edit profile →**.
+  fires. With NO handle: an inline claim step appears on the same page
+  (input prefilled from your parsed name, live availability line,
+  one **Claim & publish → ** button) — it must NOT bounce you to the
+  handle-checker tool page.
+- 👁 Publish → land on `/account?published=<slug>` with the "🎉 Your
+  website is live" banner: big URL link, **Copy link** (flips to
+  ✓ Copied), **Make a QR code →** (QR tool opens with the URL already
+  rendered), and **Edit profile →**.
 - 👁 Click View live → public profile at `/{slug}` renders the
   resume site. Reload — still there (real, not ephemeral).
 

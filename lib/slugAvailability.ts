@@ -15,6 +15,23 @@ export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 export const SLUG_MIN = 3;
 export const SLUG_MAX = 30;
 
+/** Best-effort slug suggestion from a person's name ("Jason Miller" →
+ *  "jason-miller"). Returns "" when nothing usable remains. Diacritics are
+ *  stripped via NFKD so "José" suggests "jose", and the result is clamped to
+ *  SLUG_MAX at a hyphen boundary where possible. */
+export function suggestSlug(name: string): string {
+  const slug = name
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (slug.length <= SLUG_MAX) return slug.length >= SLUG_MIN ? slug : "";
+  const cut = slug.slice(0, SLUG_MAX + 1);
+  const atHyphen = cut.lastIndexOf("-");
+  return (atHyphen >= SLUG_MIN ? cut.slice(0, atHyphen) : cut.slice(0, SLUG_MAX)).replace(/-+$/, "");
+}
+
 /** Format/length/reserved checks — pure, no DB. */
 export function checkSlugLocal(slug: string): SlugStatus | null {
   if (slug.length < SLUG_MIN || slug.length > SLUG_MAX) {

@@ -126,6 +126,7 @@ export default function SignInForm({ next }: { next?: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
+          aria-label="Email address"
           disabled={state === "submitting"}
           style={{
             flex: "1 1 220px", padding: "12px 16px", borderRadius: 10, fontSize: 15,

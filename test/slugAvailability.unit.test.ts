@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkSlugLocal, SLUG_MIN, SLUG_MAX } from "../lib/slugAvailability.ts";
+import { checkSlugLocal, suggestSlug, SLUG_MIN, SLUG_MAX } from "../lib/slugAvailability.ts";
 import { isReservedSlug, RESERVED_SLUGS } from "../lib/reservedSlugs.ts";
 
 test("checkSlugLocal: rejects too-short", () => {
@@ -57,4 +57,17 @@ test("isReservedSlug: case-insensitive", () => {
 test("RESERVED_SLUGS: includes every tool slug", () => {
   // Sanity: at least the 10 tool slugs are present.
   assert.ok(RESERVED_SLUGS.size >= 10);
+});
+
+test("suggestSlug: name to handle", () => {
+  assert.equal(suggestSlug("Jason Miller"), "jason-miller");
+  assert.equal(suggestSlug("  José Álvarez "), "jose-alvarez");
+  assert.equal(suggestSlug("X Æ"), "");
+  assert.equal(suggestSlug(""), "");
+});
+
+test("suggestSlug: clamps long names at a hyphen boundary and stays valid", () => {
+  const s = suggestSlug("Maximiliano Bartholomew Featherstonehaugh III");
+  assert.ok(s.length <= SLUG_MAX, `len ${s.length}`);
+  assert.equal(checkSlugLocal(s), null);
 });

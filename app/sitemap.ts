@@ -17,6 +17,7 @@ const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${BASE}/tools/resume-qr-code-generator`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   { url: `${BASE}/tools/case-study-template`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   { url: `${BASE}/tools/portfolio-handle-checker`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+  { url: `${BASE}/example`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

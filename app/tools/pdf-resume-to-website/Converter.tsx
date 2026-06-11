@@ -278,21 +278,16 @@ export default function Converter() {
             <ResumeSite data={data} photoUrl={photoUrl} themeId={themeId} />
           </div>
 
-          {/* evident primary action */}
+          {/* ONE evident primary action — a second competing publish button
+              tested as clutter, not conversion */}
           <div className={styles.actions}>
             <button className={`${styles.btn} ${styles.accent} ${styles.btnLg}`} onClick={() => goPublish("result_actions")}>
               Publish this website →
             </button>
+            <a href="/example" className={styles.exampleLink}>See a live example ↗</a>
           </div>
 
-          {/* sticky CTA — only rendered after a result exists */}
           <NextSteps from="pdf-resume-to-website" />
-          <div className={styles.cta}>
-            <p>Your website is ready — publish it with your own URL in 1 click.</p>
-            <button className={`${styles.btn} ${styles.primary}`} onClick={() => goPublish("sticky_result")}>
-              Publish on Vibe Resume
-            </button>
-          </div>
         </section>
       )}
     </div>

@@ -34,7 +34,8 @@
 
 @media (max-width: 760px) { .hero h1 { font-size: 27px; } }
 
-.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+.exampleLink { color: var(--accent); font-size: 14px; font-weight: 600; }
 .btnLg { padding: 14px 22px; font-size: 16px; }
 
 .resultHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; }
@@ -102,15 +103,6 @@
   .siteHero { flex-direction: column; text-align: center; align-items: center; }
   .siteName { font-size: 24px; }
 }
-
-.cta {
-  position: sticky; bottom: 0; margin-top: 16px;
-  background: linear-gradient(90deg, #1b2a4a, #163a31);
-  border: 1px solid #2b3a4f; border-radius: 14px; padding: 14px 18px;
-  color: #eaf0f8; /* band is dark in both themes — keep text light */
-  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
-}
-.cta p { margin: 0; font-weight: 600; color: inherit; }
 
 .faq { margin-top: 8px; }
 .faq details { border-bottom: 1px solid var(--line); padding: 12px 0; }

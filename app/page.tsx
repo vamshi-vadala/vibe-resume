@@ -52,6 +52,9 @@ export default function Home() {
         <li className={styles.trustItem}>
           <a href={REPO} target="_blank" rel="noopener noreferrer">Open source ↗</a>
         </li>
+        <li className={styles.trustItem}>
+          <Link href="/example">See a live example ↗</Link>
+        </li>
       </ul>
 
       {TOOL_GROUPS.map((g) => {

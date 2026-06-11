@@ -287,9 +287,19 @@ function detectTitle(lines: TextLine[], { line, name, idx }: NameMatch): string 
 /** Contact lines, collected from anywhere (sidebars place them far from the name). */
 function collectContacts(lines: TextLine[], nameLine: TextLine): string[] {
   return [...new Set(
-    lines.filter((l) => l !== nameLine && isContact(l.text)).map((l) => l.text.trim())
+    lines.filter((l) => l !== nameLine && isContact(l.text)).map((l) => formatBarePhones(l.text.trim()))
   )].slice(0, 4);
 }
+
+/** Format bare 10-digit phone runs ("3868683442") as "(386) 868-3442".
+ *  Exactly 10 digits only — zips, years and pre-formatted numbers untouched. */
+export function formatBarePhones(s: string): string {
+  return s.replace(/(?<![\d().-])(\d{3})(\d{3})(\d{4})(?![\d.-])/g, "($1) $2-$3");
+}
+
+// Resume-builder export artifacts (template-gallery links, "build this
+// template" CTAs) that read as the candidate's own content if kept.
+const TEMPLATE_NOISE = /^(resume templates?|build this (template|resume)|(created|made) (with|using)\b.*|powered by\b.*)$/i;
 
 const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z.]*";
 // A date *range*: "Jan 2020 — Present", "2017 - 2019", "May 2021 to Aug 2022".
@@ -403,6 +413,7 @@ function extractBody(lines: TextLine[], name: string, nameIdx: number): Body {
     if (isContact(line.text) && !isDateLine(line.text)) continue;
     const bullet = BULLET_LEAD.test(line.text);
     const item = line.text.replace(BULLET_LEAD, "").trim();
+    if (TEMPLATE_NOISE.test(item)) continue;
     if (item && item !== name) current.items.push({ text: item, bullet });
   }
   flush();

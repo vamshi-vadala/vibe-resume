@@ -2,7 +2,7 @@
 // and the safety net that lets us refactor lib/resume.ts without silent regressions.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseResume, linesFromItems, type PositionedItem, type TextLine } from "../lib/resume.ts";
+import { parseResume, linesFromItems, formatBarePhones, type PositionedItem, type TextLine } from "../lib/resume.ts";
 
 const L = (text: string, size = 0): TextLine => ({ text, size });
 const item = (str: string, x: number, y: number, w = 50, size = 12): PositionedItem => ({ str, x, y, w, size });
@@ -238,4 +238,33 @@ test("only the Experience section gets entries; others stay flat", () => {
   const edu = d.sections.find((s) => s.heading === "Education");
   assert.ok(edu, "Education section exists");
   assert.equal(edu!.entries, undefined, "non-Experience section has no entries");
+});
+
+// ---- template-branding noise + phone display ------------------------------
+
+test("drops resume-builder template branding lines from sections", () => {
+  const d = parseResume(
+    "Jane Doe\nDesigner\n\nProjects\nPortfolio redesign\nResume Templates\nBuild this template\nPowered by resume.io"
+  );
+  const proj = d.sections.find((s) => s.heading === "Projects");
+  assert.ok(proj, "Projects section exists");
+  assert.ok(proj.items.includes("Portfolio redesign"));
+  assert.ok(!proj.items.includes("Resume Templates"), "template-gallery link dropped");
+  assert.ok(!proj.items.includes("Build this template"), "builder CTA dropped");
+  assert.ok(!proj.items.some((i) => /powered by/i.test(i)), "builder branding dropped");
+});
+
+test("formats bare 10-digit phone numbers in contact lines", () => {
+  const d = parseResume("Jane Doe\nDesigner\n3868683442 · jane@email.com");
+  assert.ok(
+    d.contactLines.some((l) => l.includes("(386) 868-3442")),
+    `formatted phone expected, got: ${JSON.stringify(d.contactLines)}`
+  );
+});
+
+test("formatBarePhones leaves zips, years and formatted numbers alone", () => {
+  assert.equal(formatBarePhones("Los Angeles, CA 90291"), "Los Angeles, CA 90291");
+  assert.equal(formatBarePhones("2016 - 2020"), "2016 - 2020");
+  assert.equal(formatBarePhones("(415) 555-0192"), "(415) 555-0192");
+  assert.equal(formatBarePhones("call 3868683442 now"), "call (386) 868-3442 now");
 });

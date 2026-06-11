@@ -11,7 +11,7 @@ const TOOL_SLUGS = TOOLS.map((t) => t.href.replace(/^\/tools\//, ""));
 
 const STATIC_RESERVED = [
   // top-level routes that exist today
-  "tools", "signup", "contact", "privacy", "terms",
+  "tools", "signup", "contact", "privacy", "terms", "example",
   // framework / hosting
   "_next", "api", "favicon.ico", "icon.svg", "manifest.webmanifest",
   "robots.txt", "sitemap.xml",

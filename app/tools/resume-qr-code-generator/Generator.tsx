@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import posthog from "posthog-js";
 import { normalizeUrl, isValidQrInput, qrFilename } from "@/lib/qr.ts";
 import NextSteps from "../../NextSteps";
@@ -48,6 +48,14 @@ export default function Generator() {
   const [svg, setSvg] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // ?url= handoff (e.g. from the /account "published" banner): prefill and
+  // generate immediately so the QR is ready on arrival.
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search).get("url");
+    if (u) { setInput(u); run(u, COLORS[0].dark); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function run(raw: string, dark: string, started = true) {
     if (!isValidQrInput(raw)) {
