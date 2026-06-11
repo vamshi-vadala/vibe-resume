@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import posthog from "posthog-js";
 import {
   generateSlugs, isValidName, linkedinUrl, vibeUrl, type SlugSuggestion,
@@ -27,6 +27,14 @@ export default function Customizer() {
   const [suggestions, setSuggestions] = useState<SlugSuggestion[] | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+
+  // ?name= handoff (e.g. from the /account journey strip): prefill and
+  // generate immediately so suggestions are ready on arrival.
+  useEffect(() => {
+    const n = new URLSearchParams(window.location.search).get("name");
+    if (n) { setName(n); run(n, ""); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function run(rawName: string, rawKeyword: string) {
     if (!isValidName(rawName)) {

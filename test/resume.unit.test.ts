@@ -2,7 +2,7 @@
 // and the safety net that lets us refactor lib/resume.ts without silent regressions.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseResume, linesFromItems, formatBarePhones, type PositionedItem, type TextLine } from "../lib/resume.ts";
+import { parseResume, linesFromItems, formatBarePhones, looksLikeSampleResume, SAMPLE_RESUME_TEXT, type PositionedItem, type TextLine } from "../lib/resume.ts";
 
 const L = (text: string, size = 0): TextLine => ({ text, size });
 const item = (str: string, x: number, y: number, w = 50, size = 12): PositionedItem => ({ str, x, y, w, size });
@@ -267,4 +267,14 @@ test("formatBarePhones leaves zips, years and formatted numbers alone", () => {
   assert.equal(formatBarePhones("2016 - 2020"), "2016 - 2020");
   assert.equal(formatBarePhones("(415) 555-0192"), "(415) 555-0192");
   assert.equal(formatBarePhones("call 3868683442 now"), "call (386) 868-3442 now");
+});
+
+test("looksLikeSampleResume flags the demo sample but not a real Jane Doe", () => {
+  const sample = parseResume(SAMPLE_RESUME_TEXT);
+  assert.equal(looksLikeSampleResume(sample), true);
+  assert.equal(
+    looksLikeSampleResume({ name: "Jane Doe", contactLines: ["jane.doe@realco.com"] }),
+    false
+  );
+  assert.equal(looksLikeSampleResume({ name: "Jason Miller", contactLines: [] }), false);
 });

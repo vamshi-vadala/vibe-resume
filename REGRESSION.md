@@ -48,6 +48,12 @@ Run before every `git push` to main that touches anything user-facing.
   6-digit code + fallback link.
 - 👁 Enter code → land on `/account`. Header now shows avatar+email
   pill.
+- 👁 `/account` opens with the journey strip (Generate → Claim →
+  Publish → Share); completed steps show ✓, the next step is
+  highlighted with a one-line nudge. With a live site, the strip shows
+  the Share row (Copy link / QR / LinkedIn / Add a photo).
+- 👁 Homepage while signed in shows the "Your site … Manage your
+  site →" band above the hero; signed out it must NOT appear.
 - 👁 **Hard fail signal:** if email arrives from
   `noreply@mail.app.supabase.io`, custom SMTP regressed — Resend
   config in Supabase Dashboard → Auth → SMTP got reset.
@@ -67,6 +73,10 @@ Run before every `git push` to main that touches anything user-facing.
   (input prefilled from your parsed name, live availability line,
   one **Claim & publish → ** button) — it must NOT bounce you to the
   handle-checker tool page.
+- 👁 If you used "Try a sample": the first publish click must ARM a
+  "⚠ This is the sample resume (Jane Doe)" warning and swap the button
+  to **Publish the demo anyway →** — only the second click publishes.
+  (Skip this check when testing with a real PDF.)
 - 👁 Publish → land on `/account?published=<slug>` with the "🎉 Your
   website is live" banner: big URL link, **Copy link** (flips to
   ✓ Copied), **Make a QR code →** (QR tool opens with the URL already

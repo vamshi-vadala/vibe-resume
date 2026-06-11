@@ -448,6 +448,14 @@ export function parseResume(input: string | TextLine[]): ResumeData {
   };
 }
 
+/** Does this parsed resume look like our "Try a sample" demo data? Used to
+ *  warn before someone publishes Jane Doe to their real handle, and to badge
+ *  demo-data handles on /account. Name + sample email together keep the
+ *  false-positive risk on real Jane Does negligible. */
+export function looksLikeSampleResume(r: Pick<ResumeData, "name" | "contactLines">): boolean {
+  return r.name === "Jane Doe" && r.contactLines.some((l) => l.includes("jane@example.com"));
+}
+
 /** Demo resume text so "Try a sample" works with no upload (and e2e needs no fixture). */
 export const SAMPLE_RESUME_TEXT = `Jane Doe
 Senior Product Designer

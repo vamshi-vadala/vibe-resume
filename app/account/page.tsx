@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SignOutButton from "./SignOutButton";
+import JourneyStrip from "./JourneyStrip";
 import PendingPublishNudge from "./PendingPublishNudge";
 import CopyLinkButton from "./CopyLinkButton";
 import { ReleaseHandleButton, UnpublishHandleButton, DeleteAccountButton } from "./DangerActions";
@@ -30,7 +31,7 @@ export default async function AccountPage({
     // the dashboard doesn't pull a multi-KB JSONB per row. The name lives
     // nested per kind (resume->name / profile->name), so project both. Either
     // name doubles as truthiness ("has any data yet?").
-    .select("slug, created_at, published_at, resume_kind:resume_data->>kind, resume_name:resume_data->resume->>name, profile_name:resume_data->profile->>name")
+    .select("slug, created_at, published_at, resume_kind:resume_data->>kind, resume_name:resume_data->resume->>name, profile_name:resume_data->profile->>name, resume_photo:resume_data->resume->>photoUrl")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -131,26 +132,43 @@ export default async function AccountPage({
         </div>
       )}
 
+      {(() => {
+        const rows = slugs ?? [];
+        const liveRow = rows.find((s) => s.published_at);
+        return (
+          <JourneyStrip
+            generated={rows.some((s) => !!(s.resume_name || s.profile_name))}
+            claimed={rows.length > 0}
+            publishedSlug={liveRow?.slug ?? ""}
+            personName={liveRow ? (liveRow.resume_name || liveRow.profile_name || "") : ""}
+            needsPhoto={!!liveRow && kindOf(liveRow.resume_kind) === "resume" && !liveRow.resume_photo}
+          />
+        );
+      })()}
+
       <section>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>Your site</h2>
         {!slugs || slugs.length === 0 ? (
           <div style={{ padding: 28, border: "1px solid var(--line)", borderRadius: 12, background: "var(--panel)" }}>
-            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 6px" }}>
-              Get your website live in two minutes
+            {/* The journey strip above carries the step-by-step — keep this
+                to the two things it can't: the CTA and the proof. */}
+            <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>
+              Nothing here yet — your website is about two minutes away.
             </p>
-            <ol style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.9, margin: "0 0 16px", paddingLeft: 20 }}>
-              <li>
-                <Link href="/tools/pdf-resume-to-website" style={{ color: "var(--accent)", fontWeight: 600 }}>
-                  Generate a website
-                </Link>{" "}
-                from your resume, GitHub or dev profile — free, in your browser.
-              </li>
-              <li>Hit <strong>Publish</strong> on the result and pick your handle.</li>
-              <li>Share <strong>viberesume.in/your-name</strong> anywhere.</li>
-            </ol>
-            <Link href="/example" style={{ color: "var(--accent)", fontSize: 14 }}>
-              See a live example ↗
-            </Link>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <Link
+                href="/tools/pdf-resume-to-website"
+                style={{
+                  padding: "10px 18px", borderRadius: 10, fontWeight: 700, fontSize: 14,
+                  background: "var(--accent2)", color: "var(--on-accent2)",
+                }}
+              >
+                Generate a website →
+              </Link>
+              <Link href="/example" style={{ color: "var(--accent)", fontSize: 14 }}>
+                See a live example ↗
+              </Link>
+            </div>
           </div>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
@@ -187,6 +205,17 @@ export default async function AccountPage({
                         }}>
                           {badge.text}
                         </span>
+                        {kind === "resume" && s.resume_name === "Jane Doe" && (
+                          <span
+                            title="This handle is publishing the sample resume, not your own data"
+                            style={{
+                              fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 999,
+                              background: "var(--panel2)", color: "var(--text)", border: "1px solid var(--line)",
+                            }}
+                          >
+                            ⚠ Demo data
+                          </span>
+                        )}
                       </div>
                       <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
                         {(s.resume_name || s.profile_name) ? `${s.resume_name || s.profile_name} · ` : ""}{meta.label}

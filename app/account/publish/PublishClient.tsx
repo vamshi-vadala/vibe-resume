@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { checkSlugLocal, suggestSlug, SLUG_MAX } from "@/lib/slugAvailability.ts";
+import { looksLikeSampleResume } from "@/lib/resume";
 
 const PUBLISH_STASH_KEY = "vr.publish.pending";
 
@@ -35,16 +36,36 @@ export default function PublishClient({ handles }: { handles: Handle[] }) {
   const [availability, setAvailability] = useState<Availability>("unknown");
   const checkSeq = useRef(0);
 
+  // Demo-data tripwire: publishing the unmodified "Try a sample" resume to a
+  // real handle puts Jane Doe on the user's public URL. Require one explicit
+  // extra confirmation instead of blocking (previewing the full flow with the
+  // sample is legitimate).
+  const [isSample, setIsSample] = useState(false);
+  const [sampleConfirmed, setSampleConfirmed] = useState(false);
+
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(PUBLISH_STASH_KEY);
       setHasStash(!!raw);
       if (raw && needsClaim) setSlugInput(suggestSlug(nameFromStash(raw)));
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p?.resume && looksLikeSampleResume(p.resume)) setIsSample(true);
+      }
     } catch {
       setHasStash(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // First publish click on sample data arms the warning instead of publishing.
+  function sampleGate(): boolean {
+    if (isSample && !sampleConfirmed) {
+      setSampleConfirmed(true);
+      return true;
+    }
+    return false;
+  }
 
   // Debounced availability check on the claim input.
   useEffect(() => {
@@ -98,6 +119,7 @@ export default function PublishClient({ handles }: { handles: Handle[] }) {
   }
 
   async function publish() {
+    if (sampleGate()) return;
     setError("");
     setState("publishing");
     await publishTo(selected);
@@ -105,6 +127,7 @@ export default function PublishClient({ handles }: { handles: Handle[] }) {
 
   async function claimAndPublish(e: React.FormEvent) {
     e.preventDefault();
+    if (sampleGate()) return;
     setError("");
     setState("publishing");
     const res = await fetch(`/api/slugs/${slugInput}`, { method: "POST" });
@@ -216,8 +239,18 @@ export default function PublishClient({ handles }: { handles: Handle[] }) {
             opacity: ok && state !== "publishing" ? 1 : 0.6,
           }}
         >
-          {state === "publishing" ? "Publishing…" : `Claim & publish${ok ? ` viberesume.in/${slugInput}` : ""} →`}
+          {state === "publishing"
+            ? "Publishing…"
+            : isSample && sampleConfirmed
+              ? "Publish the demo anyway →"
+              : `Claim & publish${ok ? ` viberesume.in/${slugInput}` : ""} →`}
         </button>
+        {isSample && sampleConfirmed && state !== "publishing" && (
+          <p role="alert" style={{ color: "var(--muted)", fontSize: 14, marginTop: 12, maxWidth: 460 }}>
+            ⚠ This is the <strong style={{ color: "var(--text)" }}>sample resume (Jane Doe)</strong>, not yours.
+            Anyone visiting your URL will see demo data. Upload your own PDF first, or click again to publish the demo.
+          </p>
+        )}
         {state === "error" && (
           <p role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 14, marginTop: 12 }}>
             {error}
@@ -272,8 +305,19 @@ export default function PublishClient({ handles }: { handles: Handle[] }) {
           opacity: state === "publishing" ? 0.7 : 1,
         }}
       >
-        {state === "publishing" ? "Publishing…" : `Publish to viberesume.in/${selected} →`}
+        {state === "publishing"
+          ? "Publishing…"
+          : isSample && sampleConfirmed
+            ? "Publish the demo anyway →"
+            : `Publish to viberesume.in/${selected} →`}
       </button>
+
+      {isSample && sampleConfirmed && state !== "publishing" && (
+        <p role="alert" style={{ color: "var(--muted)", fontSize: 14, marginTop: 12, maxWidth: 460 }}>
+          ⚠ This is the <strong style={{ color: "var(--text)" }}>sample resume (Jane Doe)</strong>, not yours.
+          Anyone visiting your URL will see demo data. Upload your own PDF first, or click again to publish the demo.
+        </p>
+      )}
 
       {state === "error" && (
         <p role="alert" style={{ color: "var(--danger, #e5484d)", fontSize: 14, marginTop: 12 }}>

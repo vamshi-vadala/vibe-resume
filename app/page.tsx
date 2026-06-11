@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TOOLS, TOOL_GROUPS } from "@/lib/tools.ts";
+import HomeAccountBand from "./HomeAccountBand";
 import ToolIcon from "./ToolIcon";
 import styles from "./page.module.css";
 
@@ -27,11 +28,13 @@ const REPO = "https://github.com/vamshi-vadala/vibe-resume";
 export default function Home() {
   return (
     <div className={styles.wrap}>
+      <HomeAccountBand />
       <header className={styles.hero}>
-        <h1>Turn your resume into a website — free</h1>
+        <h1>Turn your resume into a website you own — free</h1>
         <p>
-          Small, no-signup tools for every step — get your resume online, make your
-          portfolio shine, and own your personal brand.
+          Upload a resume or connect GitHub, claim <strong>viberesume.in/your-name</strong>,
+          and share one clean link everywhere. Free tools for every step — no signup needed
+          to try them.
         </p>
       </header>
 
