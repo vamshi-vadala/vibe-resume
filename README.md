@@ -246,9 +246,26 @@ Gated on an env var, so the app runs fine without it (events become no-ops).
 | `NEXT_PUBLIC_POSTHOG_KEY` | `phc_...` | Vercel env (Production + Preview) + local `.env.local` |
 | `NEXT_PUBLIC_POSTHOG_HOST` | `https://us.i.posthog.com` | same |
 
-> ⚠️ **Do not mark the PostHog vars "Sensitive" in Vercel.** Sensitive vars are withheld from
-> the build, which silently breaks `NEXT_PUBLIC_` inlining. Add them as normal plaintext vars
-> (the `phc_` key is publishable/client-side by design).
+> ⚠️ **Do not mark the `NEXT_PUBLIC_POSTHOG_*` vars "Sensitive" in Vercel.** Sensitive vars are
+> withheld from the build, which silently breaks `NEXT_PUBLIC_` inlining. Add them as normal
+> plaintext vars (the `phc_` key is publishable/client-side by design).
+
+#### Profile view counts on /account (optional, read path)
+
+`/account` shows a pageview count per published handle when these **server-only** vars are set
+(`lib/posthog.ts` reads them; with either missing it returns `{}` and no counts render — so dev
+and CI are unaffected). The count is a cached HogQL query (`$pageview` by `$pathname`, 1-hour
+revalidate).
+
+| Variable | Example | Sensitive in Vercel? |
+|----------|---------|----------------------|
+| `POSTHOG_PERSONAL_API_KEY` | `phx_...` — personal key scoped to **`query:read`** | **Yes** |
+| `POSTHOG_PROJECT_ID` | `12345` — numeric project id | No |
+
+> ⚠️ These are **server-only** — do **not** add a `NEXT_PUBLIC_` prefix, or the read key leaks into
+> the browser bundle. The personal key must have the **`query:read`** scope (a `phc_` project key
+> can't read). The query API uses the app host (`us.posthog.com`), derived from
+> `NEXT_PUBLIC_POSTHOG_HOST` by dropping the `.i.` ingestion subdomain. Redeploy after adding them.
 
 ### Supabase (auth + handle reservations)
 

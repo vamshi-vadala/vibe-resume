@@ -96,6 +96,9 @@ Run before every `git push` to main that touches anything user-facing.
   rendered), and **Edit profile →**.
 - 👁 Click View live → public profile at `/{slug}` renders the
   resume site. Reload — still there (real, not ephemeral).
+- 👁 (Prod only, if `POSTHOG_PERSONAL_API_KEY` + `POSTHOG_PROJECT_ID`
+  are set) the live card on `/account` shows "N views" next to the
+  kind label. Absent those env vars, no count renders (not an error).
 
 ### 4. Edit reflects on live (≤2 min)
 - 👁 From `/account`, click **Edit →** on the published handle.

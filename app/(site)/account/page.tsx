@@ -7,6 +7,7 @@ import PendingPublishNudge from "./PendingPublishNudge";
 import CopyLinkButton from "./CopyLinkButton";
 import { ReleaseHandleButton, UnpublishHandleButton, DeleteAccountButton } from "./DangerActions";
 import { createSupabaseServerClient } from "@/lib/supabase/server.ts";
+import { getProfileViews } from "@/lib/posthog.ts";
 
 export const metadata: Metadata = {
   title: "Your account — Vibe Resume",
@@ -46,6 +47,11 @@ export default async function AccountPage({
   };
   // Missing kind on existing rows = "resume" (matches publish.ts default).
   const kindOf = (k: string | null | undefined) => (k && KIND_LABEL[k] ? k : "resume");
+
+  // Pageview counts for published handles (empty {} unless the PostHog
+  // personal API key + project id env vars are set — feature degrades silently).
+  const publishedSlugs = (slugs ?? []).filter((s) => s.published_at).map((s) => s.slug);
+  const views = await getProfileViews(publishedSlugs);
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px", fontFamily: "inherit" }}>
@@ -219,6 +225,9 @@ export default async function AccountPage({
                       </div>
                       <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
                         {(s.resume_name || s.profile_name) ? `${s.resume_name || s.profile_name} · ` : ""}{meta.label}
+                        {s.published_at && views[s.slug] !== undefined && (
+                          <> · {views[s.slug].toLocaleString()} view{views[s.slug] === 1 ? "" : "s"}</>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
