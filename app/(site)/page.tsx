@@ -24,10 +24,40 @@ const TRUST = [
 ];
 
 const REPO = "https://github.com/vamshi-vadala/vibe-resume";
+const SITE = "https://viberesume.in";
+
+// Brand-entity structured data. For a young domain this helps Google understand
+// "Vibe Resume" as an organization (brand-term ranking, knowledge panel) and
+// ties the site to its open-source repo. WebSite has no SearchAction because
+// there's no on-site search results page to point it at.
+const HOME_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE}/#org`,
+      name: "Vibe Resume",
+      url: SITE,
+      logo: `${SITE}/icon.svg`,
+      sameAs: [REPO],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE}/#site`,
+      name: "Vibe Resume",
+      url: SITE,
+      publisher: { "@id": `${SITE}/#org` },
+    },
+  ],
+};
 
 export default function Home() {
   return (
     <div className={styles.wrap}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_JSON_LD).replace(/</g, "\\u003c") }}
+      />
       <HomeAccountBand />
       <header className={styles.hero}>
         <h1>Turn your resume into a website you own — free</h1>
