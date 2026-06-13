@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://viberesume.in"),
   title: "Vibe Resume",
   description: "Free tools to turn your resume and profile into a shareable website.",
+  // Default OG site name. Pages that define their own `openGraph` re-state it
+  // (Next replaces, not deep-merges, the openGraph object per route).
+  openGraph: { siteName: "Vibe Resume" },
 };
 
 // Runs before first paint: applies a saved Light/Dark choice so there's no

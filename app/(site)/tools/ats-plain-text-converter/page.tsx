@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Paste your resume, see the human view vs the ATS robot view, and fix parsing issues instantly.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

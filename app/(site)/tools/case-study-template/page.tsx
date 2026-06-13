@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Turn a project into a structured portfolio case study in minutes. Free, no signup.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

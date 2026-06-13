@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Type a GitHub username and get an instant portfolio — bio, top repos and tech stack, straight from GitHub.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

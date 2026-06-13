@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Enter your role, pick a tone, and copy a polished portfolio about-me in seconds.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

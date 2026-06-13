@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Tinder-style swipe through portfolio themes. Skip what you don't like, keep the look you love.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

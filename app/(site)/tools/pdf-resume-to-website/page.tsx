@@ -16,6 +16,7 @@ export const metadata: Metadata = {
       "Upload a PDF resume and watch it become a polished personal website preview — then publish it in one click.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

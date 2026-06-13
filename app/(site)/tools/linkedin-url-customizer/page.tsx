@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Type your name, get clean custom LinkedIn URL options you can claim in a minute.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

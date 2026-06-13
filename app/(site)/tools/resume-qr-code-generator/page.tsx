@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Turn your resume or portfolio link into a downloadable QR code. Free and instant.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

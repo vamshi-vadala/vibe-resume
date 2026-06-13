@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "Paste your developer resume and flip it into a clean portfolio with your GitHub, projects and tech stack.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

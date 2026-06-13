@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "See where @yourhandle is still available across the web and claim your portfolio URL.",
     url: SLUG,
     type: "website",
+    siteName: "Vibe Resume",
   },
 };
 

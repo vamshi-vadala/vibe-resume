@@ -43,9 +43,17 @@ export function subtitleForMeta(p: PublishPayload): string {
 }
 
 export function descForMeta(p: PublishPayload): string {
-  if (p.kind === "github") return p.profile.about || p.profile.headline;
-  if (p.kind === "developer") return p.profile.summary || p.profile.headline;
-  return p.resume.summary || `${p.resume.name}'s resume on Vibe Resume.`;
+  const raw =
+    p.kind === "github" ? (p.profile.about || p.profile.headline)
+    : p.kind === "developer" ? (p.profile.summary || p.profile.headline)
+    : (p.resume.summary || "");
+  // Pad short/empty descriptions toward the ~120-char CTR sweet spot with a
+  // branded fallback, so unfurls and SERP snippets don't read as anonymous.
+  if (raw.trim().length >= 80) return raw.trim();
+  const name = nameForMeta(p);
+  const subtitle = subtitleForMeta(p);
+  const lead = raw.trim() || (subtitle ? `${name} — ${subtitle}.` : `${name}.`);
+  return `${lead} ${name}'s personal site and portfolio on Vibe Resume — built free from a resume.`.trim();
 }
 
 export function titleForMeta(p: PublishPayload): string {

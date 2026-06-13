@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Ctx): Promise<Metadata> {
     title,
     description: desc,
     alternates: { canonical: `/${slug}` },
-    openGraph: { title, description: desc, type: "profile" },
+    openGraph: { title, description: desc, type: "profile", siteName: "Vibe Resume" },
   };
 }
 
