@@ -10,7 +10,7 @@
 [![Stars](https://img.shields.io/github/stars/vamshi-vadala/vibe-resume?style=flat-square)](https://github.com/vamshi-vadala/vibe-resume/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-[![Vibe Resume — a resume rendered as a clean personal website](https://viberesume.in/tools/pdf-resume-to-website/opengraph-image)](https://viberesume.in)
+[![Vibe Resume — a resume rendered as a clean personal website](docs/example.png)](https://viberesume.in)
 
 Upload a resume PDF (or connect GitHub) and get a clean, shareable personal site — it reads your resume, so you write nothing. Plus **10 free, no-signup tools** for every step: PDF→website, GitHub→portfolio, LinkedIn URL cleaner, resume QR codes, ATS plain-text, about-me generator, and more.
 
