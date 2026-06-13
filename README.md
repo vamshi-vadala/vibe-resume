@@ -1,164 +1,89 @@
 # Vibe Resume
 
-A suite of free, SEO-driven micro-tools that turn resumes and profiles into shareable web pages — each tool an indexed landing page that funnels to the Vibe Resume product.
+> Turn your resume PDF into a personal website at `viberesume.in/your-name` — free, no signup to try.
 
-This repo is the implementation of that programmatic-SEO plan. **All 10 tools in the cluster are live**, plus a goal-grouped landing page, global navigation, a System/Light/Dark theme toggle, OTP-code sign-in, handle reservations, and a **real publish surface** at `viberesume.in/{handle}` for the three site-producing tools (PDF Resume → Website, Developer Resume → Portfolio, GitHub → Portfolio). Plus the reusable patterns (SEO metadata, JSON-LD, conversion tracking, theming, e2e tests) every tool shares.
+**🔗 Live: [viberesume.in](https://viberesume.in)** · [Try the PDF → Website tool](https://viberesume.in/tools/pdf-resume-to-website) · [See a live example](https://viberesume.in/example)
 
-Every **tool** runs client-side and static. The publish surface adds a thin server layer: Supabase Auth + Postgres for sign-in and handle reservations, and a few small route handlers (`/auth/callback`, `/api/slugs/[slug]` with GET/POST/PATCH/DELETE, `/claim/[slug]`) plus the dynamic server pages (`/signup`, `/account`, `/account/publish`, `/account/[slug]/settings`, public `/[slug]`).
+[![Live site](https://img.shields.io/badge/live-viberesume.in-047857?style=flat-square)](https://viberesume.in)
+[![Built with Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Stars](https://img.shields.io/github/stars/vamshi-vadala/vibe-resume?style=flat-square)](https://github.com/vamshi-vadala/vibe-resume/stargazers)
+
+[![Vibe Resume — a resume rendered as a clean personal website](https://viberesume.in/tools/pdf-resume-to-website/opengraph-image)](https://viberesume.in)
+
+Upload a resume PDF (or connect GitHub) and get a clean, shareable personal site — it reads your resume, so you write nothing. Plus **10 free, no-signup tools** for every step: PDF→website, GitHub→portfolio, LinkedIn URL cleaner, resume QR codes, ATS plain-text, about-me generator, and more.
+
+**Why it's different:** built from your existing PDF (zero writing) · runs in your browser (your file is never uploaded) · your own URL you control · free & open source.
+
+---
 
 ## The tools
 
-The landing page groups all ten by user goal (driven from `lib/tools.ts`, so the header dropdown and footer mesh stay in sync):
+The landing page groups all ten by user goal, driven from `lib/tools.ts` (so the header dropdown and footer mesh stay in sync). Every tool's analysis/generation lives in a dependency-free, unit-tested `lib/*.ts`; the React layer is a thin client component.
 
 ### 🌐 Get your resume online
 
-#### PDF Resume → Website — `/tools/pdf-resume-to-website`
-
-The flagship. Upload a PDF resume and instantly preview it as a clean, responsive personal website.
-
-- **100% client-side parsing** — the PDF's text layer is read in the browser with a self-hosted [pdf.js](https://mozilla.github.io/pdf.js/) worker; the file never leaves the device.
-- **Structured extraction** — `lib/resume.ts` is a pure, dependency-free parser → `{ name, title, contactLines, summary, sections, skills }` with column-aware (gutter) extraction, letter-spacing recovery, date-anchored per-role **experience grouping**, and best-effort **headshot extraction**.
-- **Polished preview** inside a faux browser frame; graceful message for scanned/image-only PDFs.
-- **Output hygiene** (UX-overhaul 2026-06-11): resume-builder export junk ("Resume Templates", "Build this template", "Powered by …") is filtered out of sections (`TEMPLATE_NOISE` in `lib/resume.ts`), and bare 10-digit phone runs are display-formatted via `formatBarePhones`. The result has exactly ONE publish CTA (the old duplicate sticky band was removed) plus a "See a live example ↗" link.
-- **`/example`** — static, indexable trust page: the "Try a sample" resume rendered through the same `ResumeSite` component that powers published profiles, with a "Make yours free →" CTA. Linked from the homepage trust row, the PDF tool result, and the `/account` empty state. `example` is in `RESERVED_SLUGS` and the sitemap.
-
-#### GitHub → Portfolio — `/tools/github-to-portfolio`
-
-One field — a GitHub username — and out comes a portfolio, pulled straight from GitHub.
-
-- **Live profile + repos** — client fetches `/users/:u` and `/users/:u/repos` from the public API (no auth), with 404 / 403-rate-limit / network handling and an 8s `AbortController`.
-- **Portfolio view model** — `lib/ghportfolio.ts` (pure, tested): top repos by stars (forks/archived dropped), a tech stack from repo languages, and an **About** from the profile README. Project cards lead with the repo's GitHub social-preview image; repos ranked by a portfolio-worthiness score.
-
-#### Developer Resume → Portfolio — `/tools/developer-resume-to-portfolio`
-
-Paste a developer resume and flip it into a portfolio: GitHub, project repos and tech stack, pulled out automatically.
-
-- **Dev-specific extraction** — `lib/devresume.ts` adds tech-stack detection (80+ terms, canonical casing), GitHub profile/repo detection, and profile-link detection on top of `lib/resume.ts`.
-- **Live GitHub repo-pull** — when the resume names a profile, fetches that user's real repos client-side (5s `AbortController`), from **every** profile found.
-
-#### ATS Plain-Text Resume Converter — `/tools/ats-plain-text-converter`
-
-Shows a resume the way an Applicant Tracking System parses it, side by side with the human version, and scores it.
-
-- **Human view vs Robot view** — strips smart quotes/em-dashes/zero-width spaces, normalizes bullets, flattens columns, flags non-ASCII.
-- **0–100 score + grade** with prioritized recommendations split into *✓ Done for you* (applied to the output) and *✎ Edit your resume* (structural fixes). Logic in `lib/ats.ts`.
+- **PDF Resume → Website** — `/tools/pdf-resume-to-website` — the flagship. Upload a PDF and preview it as a clean, responsive site. 100% client-side parsing (self-hosted pdf.js worker; the file never leaves the device); `lib/resume.ts` is a pure parser with column-aware extraction, letter-spacing recovery, date-anchored per-role experience grouping, and headshot extraction.
+- **GitHub → Portfolio** — `/tools/github-to-portfolio` — one username → a portfolio built from the public GitHub API. `lib/ghportfolio.ts` ranks repos by a portfolio-worthiness score and derives a tech stack + About.
+- **Developer Resume → Portfolio** — `/tools/developer-resume-to-portfolio` — paste a dev resume; `lib/devresume.ts` adds tech-stack detection (80+ terms) and GitHub profile/repo detection, then live-pulls real repos.
+- **ATS Plain-Text Converter** — `/tools/ats-plain-text-converter` — human view vs. how an ATS parses it, plus a 0–100 score and prioritized fixes (`lib/ats.ts`).
 
 ### ✨ Make your portfolio shine
 
-#### Dev Portfolio Theme Picker (ThemeDeck) — `/tools/theme-picker`
-
-A Tinder-style swipe deck of dev-portfolio themes — skip what you don't like, keep the look you do.
-
-- **`lib/themes.ts`** (pure, tested) — 6 opinionated themes (midnight / paper / terminal / sunset / pastel / brutalist) as **scoped `--t-*` token sets** so a theme never leaks into the app's own tokens, a fixed sample portfolio, and wrap-around deck navigation.
-- Keep a theme → the result hands off to the PDF tool with `?theme={id}`, **which actually applies it**: the PDF preview reads the same `--t-*` tokens (with app-token fallbacks) and has its own theme switcher. Every theme is hand-tuned to WCAG AA; both tools' e2e run axe across all six.
-
-#### Portfolio About Me Generator (AboutMeAI) — `/tools/portfolio-about-me-generator`
-
-Enter your role, pick a tone, and copy a polished "about me" in seconds.
-
-- **`lib/aboutme.ts`** (pure, tested) — a deterministic, tone-driven template engine producing a one-liner, an about paragraph, a longer story, and a third-person bio, shaped by tone (Professional / Friendly / Confident / Creative). Switching tone rewrites instantly.
-- It **structures, never fabricates** — the free engine is honest; an "✨ Make it sharper with AI" CTA is reserved for a planned AI-rewrite upgrade (not built yet).
-
-#### Case Study Template (CaseCrafter) — `/tools/case-study-template`
-
-Turn a project into a structured, portfolio-ready case study.
-
-- **`lib/casestudy.ts`** (pure, tested) — structures inputs into the proven **Overview → Challenge → Approach → Outcome** framework, **extracts metrics** (`+32%`, `2x`, `$1.2M`, `#1`) into highlights, and serializes clean **Markdown**. Empty sections become guiding prompts (excluded from the export) — no invented claims.
+- **Dev Portfolio Theme Picker** — `/tools/theme-picker` — a swipe deck of 6 WCAG-AA themes as scoped `--t-*` token sets (`lib/themes.ts`); keep one and it hands off to the PDF tool with `?theme={id}`, which actually applies it.
+- **Portfolio About Me Generator** — `/tools/portfolio-about-me-generator` — deterministic, tone-driven copy (`lib/aboutme.ts`); it structures, never fabricates.
+- **Case Study Template** — `/tools/case-study-template` — structures a project into Overview → Challenge → Approach → Outcome, extracts metrics, exports Markdown (`lib/casestudy.ts`).
 
 ### 🔗 Own your personal brand
 
-#### Portfolio Handle Checker — `/tools/portfolio-handle-checker`
+- **Portfolio Handle Checker** — `/tools/portfolio-handle-checker` — truthfully checks GitHub availability live; other platforms are clearly-labelled "check yourself ↗" links, never faked (`lib/handle.ts`).
+- **LinkedIn URL Customizer** — `/tools/linkedin-url-customizer` — ranked, LinkedIn-legal custom-URL ideas from your name (`lib/slug.ts`).
+- **Resume QR Code Generator** — `/tools/resume-qr-code-generator` — QR on an always-white frame (scans in any theme), PNG + SVG export; the `qrcode` lib is dynamic-imported (`lib/qr.ts`).
 
-Check where `@yourhandle` is still free across the web, and claim your portfolio URL.
+## How publishing works
 
-- **Honest by design.** The only platform truthfully checkable from the browser is **GitHub** (public API 404 = free) — done live with an 8s `AbortController`. LinkedIn / X / Instagram / Dribbble / Dev.to are CORS/ToS-blocked, so they're clearly-labelled "check yourself ↗" links, **not faked** results. No backend.
-- `lib/handle.ts` (pure, tested) — handle normalization/validation and per-platform URL builders.
+The three site-producing tools (PDF, Developer Resume, GitHub) can publish to a real URL at `viberesume.in/{handle}`. Tools themselves are static and client-side; publishing adds a thin server layer (Supabase Auth + Postgres + a few route handlers).
 
-#### LinkedIn URL Customizer — `/tools/linkedin-url-customizer`
+**Sign in & claim.** Sign-in is a **6-digit email code** (`/signup` → `signInWithOtp` → `verifyOtp`). The magic link in the same email is only a fallback — email scanners (Outlook/Gmail safe-links, corporate AV) pre-fetch single-use PKCE links and consume them before the user clicks, which surfaces as "link expired"; a code can't be pre-clicked. Handles are reserved against a verified email and capped at 5 per user (`lib/claims.ts`).
 
-Turn your name into clean, professional custom profile URLs.
+**Publish funnel.** Clicking **Publish** on a tool result stashes the payload in `sessionStorage` (`vr.publish.pending`) and routes to `/account/publish`, carrying funnel context through sign-in. Zero-handle users get an inline claim step (handle prefilled via `suggestSlug`, debounced availability check, single "Claim & publish" button). Submit `PATCH`es `/api/slugs/[slug]`, which validates server-side via `lib/publish.ts` (300KB cap, deep shape check, owner check) and writes `resume_data` + `published_at`. A `PendingPublishNudge` lets a user who detoured mid-funnel resume in one click.
 
-- **`lib/slug.ts`** (pure, tested) — `slugify` (NFKD + diacritic/punctuation stripping) and `generateSlugs` → ranked, deduped, **LinkedIn-legal** variants (3–100 chars) each with a label and rationale; graceful single-word fallback. Copy-to-clipboard + real "how to change your LinkedIn URL" steps.
+**`/api/slugs/[slug]`** is the canonical REST resource: `GET` availability · `POST` claim · `PATCH` publish/update (10s min interval between re-publishes; first publish never throttled) · `DELETE` unpublish (keeps reservation + data) · `DELETE ?release=1` deletes the row and frees the handle.
 
-#### Resume QR Code Generator — `/tools/resume-qr-code-generator`
+**The `/account` dashboard** shows each handle as a card with a Live/Unpublished/Reserved badge, owner name, copy-link + View-live, and a primary action (Edit / Publish / Re-publish). Destructive actions sit behind a per-card "Manage handle" disclosure and use an inline two-step confirm. A state-driven **Journey strip** (Generate → Claim → Publish → Share) tracks progress; a **"⚠ Demo data"** badge and a publish-time warning prevent putting the sample "Jane Doe" resume on a real URL. When the optional PostHog read vars are set, each live card shows a pageview count (see [Environment](#environment)).
 
-Turn your portfolio/resume link into a downloadable QR code.
+**The public profile** (`app/[slug]/page.tsx`) is a dynamic catch-all that sits *behind* every static route and reserved slug, so handles never collide with platform paths. It reads via the service-role client (scoped to `published_at IS NOT NULL`), re-validates the stored JSONB defensively, and dispatches on `PublishPayload.kind` (`resume` / `developer` / `github`) to the shared render components (`ResumeSite` / `DevPortfolio` / `GhPortfolio`) — the same components the in-browser previews use, so preview === live. A valid-but-unclaimed slug renders a noindex "claim this handle" invite instead of a 404.
 
-- **`lib/qr.ts`** (pure, tested) — `normalizeUrl` (bare domain → `https://`), validation, filename. The QR itself uses the [`qrcode`](https://www.npmjs.com/package/qrcode) library, **dynamic-imported** in the handlers so it never runs during SSR or bloats the initial bundle.
-- SVG QR on an **always-white frame** (scans in any site theme), color presets that re-render instantly, and **PNG + SVG** downloads.
+### The live profile page
 
-### Account + handle claim — `/signup` + `/account` + `/api/slugs/[slug]` (Phase 1 of the publish epic)
+The published page is a *document whose job is to get the owner contacted*, so it's deliberately minimal — no platform header or 10-tool footer (chrome lives in the `app/(site)/` route group; `app/[slug]` sits outside it). It adds, over a static PDF:
 
-The real Phase-1 surface behind every "Publish" CTA: sign in with a 6-digit email code and reserve your `viberesume.in/{handle}` URL.
+- **Availability + "Get in touch" CTA** — optional `availability` line (edited in settings) + a `mailto:` button to the first email in the resume (`primaryEmail()`).
+- **Clickable contacts** — `parseContactLine()` turns contact lines into real `mailto:`/`tel:`/`https` links.
+- **Download PDF** — `PrintButton` + a `@media print` block that strips chrome to a clean white resume; no deps, nothing stored server-side.
+- **Discoverability** — `Person` JSON-LD (name, jobTitle, url, email, `sameAs` from contact URLs) and a per-profile OG share card (`opengraph-image.tsx`, Satori). Loader + metadata are centralised in `app/[slug]/profile.ts`.
+- **Owner-only bar** — `OwnerBar` (env-guarded client island) shows "This is your live site · Edit · Copy link · Account" only to the signed-in owner; everyone else sees a clean profile with just a one-line "Made with Vibe Resume" viral footer.
 
-- **OTP-code sign-in** — `/signup` is a server component that redirects already-signed-in users to `/account` and otherwise mounts a `SignInForm` client island. Submitting an email calls Supabase's `signInWithOtp`; the user then enters the 6-digit `{{ .Token }}` from the email and we call `verifyOtp({ type: "email" })` client-side. The magic link in the same email still works as a fallback via `/auth/callback`, but the primary flow is the code — link scanners (Outlook/Gmail safe-links, corporate AV) pre-fetch single-use PKCE links and consume them before the user clicks, which surfaces as "link expired" within seconds; a code can't be pre-clicked.
-- **Slug claim flow** — the handle checker (`/tools/portfolio-handle-checker`) shows truthful Vibe Resume availability alongside the GitHub row by calling `GET /api/slugs/[slug]`. The "Claim viberesume.in/{handle}" CTA routes through `/claim/[slug]` — a server component that auth-gates with `?next=/claim/{slug}`, runs the insert via the service-role client, and redirects to `/account?claimed={slug}` with a success banner (or `?error=taken|reserved|invalid` if it can't).
-- **REST resource** — `/api/slugs/[slug]` is the canonical resource: `GET` returns availability (`available` / `taken` / `reserved` / `invalid`); `POST` claims for the signed-in user. `PATCH` publishes/updates `resume_data`/`theme_id` (10s min interval between re-publishes of a live page; first publish never throttled). `DELETE` unpublishes (keeps the reservation + data); `DELETE ?release=1` deletes the row entirely and frees the handle. Claims are capped at 5 handles per user (`lib/claims.ts`, shared by this route and `/claim/[slug]`).
-- **Reserved slugs** — `lib/reservedSlugs.ts` derives a denylist from `lib/tools.ts` + static framework / auth / marketing / system paths; checked at the app layer so adding a tool slug never needs a migration. `lib/slugAvailability.ts` is the pure shared format/length/reserved check (`SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/`, `SLUG_MIN=3`, `SLUG_MAX=30`) used by both the GET endpoint and any future caller.
-- **Journey strip** — `/account` opens with a state-driven Generate → Claim → Publish → Share progress strip (`JourneyStrip.tsx`, lifecycle batch 2026-06-11). Steps 1–3 check off from server state (any site data / any handle / any `published_at`; the sessionStorage stash also counts as "generated"); the next incomplete step is highlighted with a one-line nudge. Once live, the strip becomes the Share action row: copy link, QR tool `?url=` prefill, LinkedIn customizer `?name=` prefill, and an "Add a photo" nudge when the published resume has no `photoUrl` (cheap `resume_data->resume->>photoUrl` projection — no JSONB pull).
-- **Demo-data guard** — publishing the unmodified "Try a sample" resume (detected by `looksLikeSampleResume` in `lib/resume.ts`: name + sample email) arms a one-click warning in `PublishClient` ("Publish the demo anyway →") instead of silently putting Jane Doe on a real URL; `/account` cards publishing it show a "⚠ Demo data" badge.
-- **Signed-in homepage** — `HomeAccountBand.tsx` (client island, env-guarded per the global-chrome rule) adds a "Your site is live: viberesume.in/{slug} → Manage" band above the hero for signed-in users; anonymous/static/CI renders are unchanged. Hero copy now sells the destination ("a website you own", claim your handle) while keeping the "resume into a website" SEO phrase.
-- **Account page** — `/account` ("Your site" dashboard, UX-overhaul 2026-06-11) renders each handle as a card: Live/Unpublished/Reserved status badge, owner name + kind, copy-link button and "View live ↗" when published, and a solid primary action (Edit / Publish / Re-publish from tool). Destructive actions (Unpublish, Release handle) are tucked behind a per-card "Manage handle" `<details>` disclosure. The empty state is a 3-step get-live checklist linking to the PDF tool and `/example`; plus a sign-out button; `robots: { index: false }`. Both `/account` and `/claim/` are also disallowed in `robots.ts` (belt-and-suspenders against crawl-budget waste); `/claim/[slug]` carries the same `robots: { index: false, follow: false }` metadata as defense in depth even though it only ever returns redirects.
+### Editing
 
-### Publish flow — `/account/publish` + `app/[slug]/page.tsx` (Phase 2 slice 1)
-
-The minimum-viable publish path. From the PDF tool's result, clicking **Publish** stashes `{ resume, photoUrl, themeId }` in `sessionStorage` (key `vr.publish.pending`) and routes to `/account/publish`. That page is auth-gated: zero-handle users get an **inline claim step** (handle input prefilled via `suggestSlug(name)` from the stash, debounced availability check against `GET /api/slugs/[slug]`, single "Claim & publish" button that POSTs the claim then immediately PATCHes the publish — UX-overhaul 2026-06-11; previously they were bounced to the handle-checker tool page and the funnel never closed). One handle = single-button publish; multiple = radio picker. Submit `PATCH`es `/api/slugs/[slug]` with the payload, server-side validates via `lib/publish.ts` (300KB cap, deep shape check, must own the row), and writes `resume_data` + `published_at`/`updated_at`. On success the stash is cleared and the user lands at `/account?published={slug}` with a "your website is live" banner (copy-link button + QR cross-sell via the QR tool's `?url=` prefill + edit link).
-
-Funnel context carries through sign-in: `/signup?next=/account/publish` swaps the heading to "Your website is ready 🎉" with explicit "it's saved in this browser" reassurance, and `?next=/claim/{slug}` shows "Claim viberesume.in/{slug}". `/account` also renders a client-side `PendingPublishNudge` ("Finish publishing →") whenever the sessionStorage stash exists, so a user who detours mid-funnel can always resume in one click.
-
-The public profile lives at `app/[slug]/page.tsx`. It's a dynamic catch-all whose match order sits *behind* every static segment (`tools/`, `signup`, `account`, etc.) plus every entry in `RESERVED_SLUGS`, so user handles never collide with platform routes. It re-runs `validatePublishPayload` against the stored JSONB (defensive — schemas drift), returns `notFound()` if missing / unpublished / invalid, and renders via the shared `ResumeSite` component (extracted from `Converter.tsx` so the in-browser preview and the live page are the exact same render). Per-profile `<title>` / OG / canonical metadata are generated from `resume.name + title`.
-
-The only edit path today is re-publish (overwrites). Settings panel, unpublish, theme switching from `/account`, and rate-limiting `PATCH` are deferred to slice 2+.
-
-### Slice 2A — settings + unpublish + tightened reads
-
-- **`/account/[slug]/settings`** is a server component that loads the slug row, redirects non-owners to `/account`, redirects "reserved but never published" handles to `/account/publish`, and mounts `SettingsClient` with the validated `PublishPayload`. The client form edits photo, name, headline, availability, summary, contact links, skills, and theme; on save it sends the full payload (preserving `sections` from the loaded row) to `PATCH /api/slugs/[slug]`. Bullet-level editing of structured sections (Experience entries, Education, Projects) is intentionally not in scope — re-uploading the PDF is the edit path for those.
-- **`DELETE /api/slugs/[slug]`** is owner-only and sets `published_at = null` (keeps the reservation + `resume_data` so the user can re-publish later). Releasing the handle entirely is `DELETE ?release=1` (Phase 3).
-- **Tightened anon SELECT**: the `resume_data` column has been revoked from the `anon` role so a draft profile can't be read by anyone with the publishable key. The public profile page now reads via the service-role client (it scopes itself to `published_at IS NOT NULL`, so service-role usage stays narrow). Handle availability checks are unaffected — they only select `slug`. **The accompanying SQL migration that ships with this slice MUST be applied in the Supabase dashboard:**
-
-  ```sql
-  -- Lock down resume_data on anon reads. The public profile page now reads via
-  -- service-role (server-side, scoped to published_at IS NOT NULL).
-  REVOKE SELECT (resume_data) ON public.slugs FROM anon;
-  ```
-
-### Live page (`/[slug]`) — function-first rework (UX overhaul 2026-06-14)
-
-The published page is a *document whose job is to get the owner contacted*, not a landing page. Three additions make it pull its weight over the static PDF:
-
-- **Availability + "Get in touch" CTA** — `ResumePayload` gains an optional `availability` string (e.g. "Open to senior design roles · Remote / SF"), edited on `/account/[slug]/settings` ("Availability / what you want" field) and validated in `lib/publish.ts`. `ResumeSite` renders it at the top with a **Get in touch** button (`mailto:` the first email found in `contactLines` via `primaryEmail()`); the block is hidden when there's neither an availability line nor an email. Other publish kinds and legacy rows simply omit it.
-- **Clickable contacts** — `contactLines` used to render as dead joined text. `parseContactLine()` (pure, in `lib/resume.ts`) splits each line on visual separators and classifies tokens into `mailto:` / `tel:` / `https://` links (external links get `target=_blank rel=noopener`); plain tokens like a city stay text. Same render flows through the editor preview, `/example`, and every live profile.
-- **Download PDF** — `app/[slug]/PrintButton.tsx` (client) calls `window.print()`; a `@media print` block in `globals.css` zeroes the theme to white, hides all chrome (`data-site-header`/`data-site-footer`, `.print-hide`, the button itself) and promotes `[data-print-root]` so the saved file is just the resume. No new deps, nothing stored server-side — recruiters get a file for their ATS.
-
-**Discoverability + share (items 4):** `app/[slug]/profile.ts` centralises the loader + metadata derivation, shared by the page and the OG image. The page emits **schema.org `Person` JSON-LD** (`name`, `jobTitle`, `url`, `email`, and `sameAs` derived from contact-line URLs) so it ranks for the owner's name. `app/[slug]/opengraph-image.tsx` (Next `ImageResponse` / Satori — no new dep) renders a **per-profile share card** (name + headline on the brand gradient), with a generic fallback for unclaimed/unpublished slugs so unfurls never break.
-
-**Minimal chrome (item 5):** the platform header + 10-tool footer were competing with the owner's identity on a profile. Chrome now lives in an `app/(site)/` **route group** (its `layout.tsx` renders `SiteHeader` + `SiteFooter`); every normal route moved under `(site)` (URLs unchanged — route groups don't affect paths). The root `app/layout.tsx` keeps only `<html>/<body>` + `Analytics`, and `app/[slug]` sits *outside* `(site)`, so a public profile renders with no platform chrome — just the resume, its own one-line "Made with Vibe Resume" viral footer, and an **owner-only slim bar** (`OwnerBar.tsx`, env-guarded client island: shows "This is your live site · Edit · Copy link · Account" only when the signed-in viewer owns the slug; renders nothing for everyone else).
-
-### Supabase data model
-
-- **`users`** mirrors `auth.users` (auto-populated by the `on_auth_user_created` trigger on insert into `auth.users`).
-- **`slugs`** holds reservations: `slug` as PK, `user_id` FK, `created_at`, plus a CHECK constraint enforcing the `[a-z0-9-]{3,30}` format. **Phase-2 columns** (`resume_data jsonb`, `theme_id text`, `published_at timestamptz`, `updated_at timestamptz`) are already on the table as nullable, so Phase 2 ships with zero migration.
-- **RLS is on**: anon can SELECT slugs (for the public availability check + future public profiles); only the owning user can INSERT against themselves; DELETE is also owner-only. No UPDATE policy yet — Phase 2 adds one scoped to `resume_data`/`theme_id`.
+`/account/[slug]/settings` (resume-kind only) edits photo, name, headline, availability, summary, contact links, skills, and theme, with a live preview rendered by the real `ResumeSite`. Structured sections (Experience/Education/Projects) are read-only — re-uploading the PDF is the edit path for those. Developer/GitHub profiles re-publish from their source tool to change.
 
 ## Platform foundations
 
-- **Goal-grouped landing page** — the 10 tools are grouped by intent ("Get your resume online" / "Make your portfolio shine" / "Own your personal brand") from `lib/tools.ts` (a `group` field + `TOOL_GROUPS`). Each card has a monoline `ToolIcon`; the page leads with a 3-step "how it works" strip and honest trust signals (in-browser / no-signup / open-source).
-- **Cross-tool funnel** — every tool's result ends with a contextual `NextSteps` block ("Next step" chips) that nudges the visitor to a logical follow-up tool instead of dead-ending.
-- **Global navigation** — a sticky `SiteHeader` (wordmark → home, accessible Tools dropdown, theme toggle, auth-aware `UserMenu`) and a `SiteFooter` link mesh, both reading the **single tool registry** `lib/tools.ts` so they can't drift. Add a new tool there and it appears everywhere. The `UserMenu` is a deliberate client-only island — pulling session state into the server layout would convert every static page in the app to dynamic rendering (a `cookies()` call in a layout poisons the static cache for everything beneath it). It renders the anon "Sign in" CTA during loading, then swaps to an avatar+email pill (linking to `/account`) once Supabase JS reads the session from localStorage. Brief first-paint flicker for signed-in users is the deliberate trade for keeping every marketing/tool page statically prerendered. Sign-out lives on `/account` — no popover until we have ≥3 menu items to justify one.
-- **System / Light / Dark theme toggle** — a 3-state header control (`ThemeToggle`) persisted to `localStorage`. `:root` is light, `:root[data-theme="dark"]` is explicit dark, and `prefers-color-scheme` only applies when no manual choice is set (so System follows the OS but a pick always wins). A blocking inline script in `layout.tsx` applies the saved theme **before first paint** (no flash of the wrong theme).
-- **SEO template** — exact-match `<h1>`, unique keyword-rich meta description per page, `/tools/{kebab-keyword}` slug, OpenGraph (+ per-tool `opengraph-image`), canonical, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Site-wide: `metadataBase` (so OG/canonical URLs resolve to the production origin), `Organization` + `WebSite` JSON-LD on the homepage (brand entity + repo `sameAs`), `app/sitemap.ts`, `app/robots.ts`, and `app/manifest.ts` + `app/icon.svg`. Tools cross-link siblings; the footer links all ten from every page.
-- **Trust & legal** — Privacy, Terms and Contact pages (`/privacy`, `/terms`, `/contact`), linked in the footer. The privacy policy is honest about the model: resume content is processed in the browser and never uploaded; the only personal data we store is your sign-in email + any handles you reserve, plus anonymous PostHog analytics.
-- **Conversion tracking** — funnel events (`page_view`, `tool_started`, `tool_completed`, `result_interacted`, `cta_clicked`) pushed to `dataLayer` + PostHog, each stamped with `tool_slug`. Result-gated, UTM-tagged CTAs.
-- **Pure, testable logic** — every tool's analysis/generation lives in a dependency-free `lib/*.ts` covered by the Node test runner; the React layer is a thin client component.
+- **Goal-grouped landing page** from `lib/tools.ts`; each tool result ends with a contextual `NextSteps` block that funnels to a logical follow-up tool.
+- **Global navigation** — sticky `SiteHeader` (wordmark, Tools dropdown, theme toggle, auth-aware `UserMenu`) + `SiteFooter`, both reading the single `lib/tools.ts` registry so they can't drift. `UserMenu` is a deliberate client-only island: putting session state in the server layout would convert every static page to dynamic (a `cookies()` call in a layout poisons the static cache beneath it), so it renders the anon "Sign in" CTA, then swaps to the account pill once Supabase reads the session client-side.
+- **System / Light / Dark theme** — a 3-state `ThemeToggle` persisted to `localStorage`; a blocking inline script in `layout.tsx` applies the saved theme before first paint (no flash). `prefers-color-scheme` only applies when no manual choice is set.
+- **SEO** — exact-match `<h1>`, unique meta per page, `/tools/{kebab-keyword}` slugs, OpenGraph (+ per-tool `opengraph-image`), canonical, and `SoftwareApplication` + `FAQPage` JSON-LD (XSS-sanitized). Site-wide: `metadataBase`, `Organization` + `WebSite` JSON-LD on the homepage, `sitemap.ts` (includes published profiles, hourly revalidate), `robots.ts`, `manifest.ts`.
+- **Privacy by design** — resume content is processed in the browser and never uploaded; the only stored personal data is the sign-in email + reserved handles, plus anonymous PostHog analytics. Privacy / Terms / Contact pages linked in the footer.
+- **Conversion tracking** — funnel events (`page_view`, `tool_started`, `tool_completed`, `result_interacted`, `cta_clicked`) to PostHog, stamped with `tool_slug`.
 
 ## Tech stack
 
 - [Next.js 16](https://nextjs.org) (App Router) + React 19, TypeScript
 - CSS Modules + CSS custom properties (semantic theme tokens, WCAG-AA in light & dark)
-- [`qrcode`](https://www.npmjs.com/package/qrcode) for the QR tool (dynamic-imported)
-- [Supabase](https://supabase.com) (Postgres + Auth + RLS) for sign-in and handle reservations, via `@supabase/supabase-js` + `@supabase/ssr`
-- Node's built-in test runner for pure-logic unit tests
-- [Playwright](https://playwright.dev) + [axe-core](https://github.com/dequelabs/axe-core) for render + contrast e2e (light & dark)
+- [Supabase](https://supabase.com) (Postgres + Auth + RLS) via `@supabase/supabase-js` + `@supabase/ssr`
+- [`qrcode`](https://www.npmjs.com/package/qrcode) (dynamic-imported) for the QR tool
+- Node's built-in test runner for pure-logic unit tests; [Playwright](https://playwright.dev) + [axe-core](https://github.com/dequelabs/axe-core) for render + contrast e2e (light & dark)
 
 ## Project structure
 
@@ -167,7 +92,7 @@ app/
   layout.tsx                  # root: html/body + no-FOUC theme init + Analytics ONLY (no chrome)
   globals.css                 # theme tokens (light + dark + data-theme overrides) + @media print
   providers.tsx               # PostHog analytics wiring
-  SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx UserMenu.tsx chrome.module.css   # global nav + theme toggle
+  SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx UserMenu.tsx chrome.module.css   # global nav
   sitemap.ts robots.ts manifest.ts icon.svg   # SEO/PWA metadata routes + brand icon
   (site)/                     # route group: everything WITH platform chrome (URLs unchanged)
     layout.tsx                #   renders SiteHeader + SiteFooter around its children
@@ -189,16 +114,16 @@ lib/
   tools.ts                    # single source of truth: TOOLS registry + goal groups
   ats.ts resume.ts            # ATS + PDF-resume parsers
   github.ts devresume.ts ghportfolio.ts   # GitHub primitives + the two portfolio tools
-  themes.ts slug.ts aboutme.ts qr.ts casestudy.ts handle.ts   # tools #4,#5,#6,#8,#9,#10
+  themes.ts slug.ts aboutme.ts qr.ts casestudy.ts handle.ts   # the remaining tools
   supabase/{client,server,admin}.ts   # SSR-aware Supabase clients (browser anon / server cookies / service-role)
-  reservedSlugs.ts slugAvailability.ts # slug denylist + pure availability check (format/length/reserved)
-  publish.ts                  # PublishPayload type + pure validator for PATCH /api/slugs/[slug] body
-  photo.ts                    # browser-only photo resize (400×400 q0.82 JPEG → base64) + pure type/size validators
+  reservedSlugs.ts slugAvailability.ts # slug denylist + pure availability check
+  publish.ts                  # PublishPayload type + pure validator for PATCH body
+  posthog.ts                  # server-only cached HogQL pageview counts for /account
+  photo.ts                    # browser-only photo resize + pure type/size validators
 public/
   pdf.worker.min.mjs          # self-hosted pdf.js worker (see note below)
 test/                         # *.unit.test.ts — pure-logic unit tests (Node runner)
-e2e/                          # *.spec.ts — Playwright render + axe (light & dark):
-                              #   per-tool specs, nav.spec, theme-toggle.spec, home.spec
+e2e/                          # *.spec.ts — Playwright render + axe (light & dark)
 playwright.config.ts          # runs every spec in light & dark color schemes
 ```
 
@@ -213,7 +138,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and pick a tool, or jump to one and click **"Try a sample"**.
+Open [http://localhost:3000](http://localhost:3000) and pick a tool, or click **"Try a sample"**. The tools work with no env vars; only the publish flow needs Supabase (see below).
 
 ## Scripts
 
@@ -228,16 +153,16 @@ Open [http://localhost:3000](http://localhost:3000) and pick a tool, or jump to 
 
 ## Testing & CI
 
-`.github/workflows/deploy.yml` runs on every push to `main`: unit tests → `next build` (TS/build gate) → Playwright e2e (light + dark + axe contrast, a hard gate) → Vercel build & deploy (when `VERCEL_TOKEN` is set).
+`.github/workflows/deploy.yml` runs on every push to `main`: unit tests → `next build` → Playwright e2e (light + dark + axe contrast, a hard gate) → Vercel build & deploy.
 
-- **Still run `npm run build` locally before pushing** — it's faster to catch a TS error there than to wait for CI. A unit test (`test/sitemap.unit.test.ts`) also fails the build if the sitemap and the `lib/tools.ts` registry drift apart.
-- **Contrast is enforced.** Every tool's result is axe-checked in both themes. Note: **CI's Linux Chromium is the source of truth for color-contrast** — local (Windows/macOS) Chromium can *false-pass* borderline values (`< ~4.6:1`). The convention: never put colored text on a same-hue `color-mix` tint (it lands ~4.4:1); use a solid token surface (`--panel`/`--panel2`) or the solid accent pairing (`--accent2`/`--on-accent2`), keeping a comfortable margin over 4.5:1.
+- **Run `npm run build` locally before pushing** — it's the only TS gate, and `test/sitemap.unit.test.ts` also fails the build if the sitemap and `lib/tools.ts` drift apart.
+- **Contrast is enforced.** Every result is axe-checked in both themes. **CI's Linux Chromium is the source of truth** — local Windows/macOS Chromium can *false-pass* borderline values (`< ~4.6:1`). Never put colored text on a same-hue `color-mix` tint; use a solid token surface (`--panel`/`--panel2`) or the solid accent pairing (`--accent2`/`--on-accent2`), keeping margin over 4.5:1.
 
 ## Environment
 
-All `NEXT_PUBLIC_*` vars are embedded at build time; the CI workflow's `vercel pull` fetches them from the Vercel project before building, so set them in Vercel for production/preview.
+`NEXT_PUBLIC_*` vars are embedded at build time; CI's `vercel pull` fetches them before building, so set them in Vercel for production/preview.
 
-### Analytics (PostHog)
+### Analytics (PostHog) — optional
 
 Gated on an env var, so the app runs fine without it (events become no-ops).
 
@@ -250,54 +175,57 @@ Gated on an env var, so the app runs fine without it (events become no-ops).
 > withheld from the build, which silently breaks `NEXT_PUBLIC_` inlining. Add them as normal
 > plaintext vars (the `phc_` key is publishable/client-side by design).
 
-#### Profile view counts on /account (optional, read path)
+#### Profile view counts on /account — optional, read path
 
 `/account` shows a pageview count per published handle when these **server-only** vars are set
-(`lib/posthog.ts` reads them; with either missing it returns `{}` and no counts render — so dev
-and CI are unaffected). The count is a cached HogQL query (`$pageview` by `$pathname`, 1-hour
-revalidate).
+(`lib/posthog.ts`; with either missing it returns `{}` and no counts render, so dev/CI are
+unaffected). Cached HogQL query (`$pageview` by `$pathname`, 1-hour revalidate).
 
 | Variable | Example | Sensitive in Vercel? |
 |----------|---------|----------------------|
 | `POSTHOG_PERSONAL_API_KEY` | `phx_...` — personal key scoped to **`query:read`** | **Yes** |
 | `POSTHOG_PROJECT_ID` | `12345` — numeric project id | No |
 
-> ⚠️ These are **server-only** — do **not** add a `NEXT_PUBLIC_` prefix, or the read key leaks into
-> the browser bundle. The personal key must have the **`query:read`** scope (a `phc_` project key
-> can't read). The query API uses the app host (`us.posthog.com`), derived from
-> `NEXT_PUBLIC_POSTHOG_HOST` by dropping the `.i.` ingestion subdomain. Redeploy after adding them.
+> ⚠️ **Server-only** — do **not** add a `NEXT_PUBLIC_` prefix, or the read key leaks into the
+> browser bundle. The personal key needs the **`query:read`** scope (a `phc_` project key can't
+> read). The query API uses the app host (`us.posthog.com`), derived from `NEXT_PUBLIC_POSTHOG_HOST`
+> by dropping the `.i.` ingestion subdomain. Redeploy after adding them.
 
 ### Supabase (auth + handle reservations)
 
-Replaces the deleted `/api/waitlist` Upstash setup. The anon key is public by design (it's protected by RLS in the browser); the service-role key bypasses RLS and is server-only.
+The anon key is public by design (protected by RLS); the service-role key bypasses RLS and is server-only.
 
 | Variable | Description | Sensitive in Vercel? |
 |----------|-------------|----------------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL, e.g. `https://<ref>.supabase.co` | No |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable (`sb_publishable_...`) — used by `lib/supabase/client.ts` + `server.ts` | No |
-| `SUPABASE_SERVICE_ROLE_KEY` | Secret (`sb_secret_...`) — used only by `lib/supabase/admin.ts` for owner-checked inserts | **Yes** |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable (`sb_publishable_...`) — used by `client.ts` + `server.ts` | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret (`sb_secret_...`) — used only by `admin.ts` | **Yes** |
+| `CRON_SECRET` | Auth for the daily slug-reap cron (`/api/cron/reap-slugs`); any long random string | server-only (Production scope, redeploy to take effect) |
 
 > ⚠️ Add `https://viberesume.in/auth/callback` (and `http://localhost:3000/auth/callback` for dev)
-> to **Supabase → Authentication → URL Configuration → Redirect URLs**, and set the **Site URL**
-> to `https://viberesume.in`. Without this, the magic-link redirect bounces to a generic Supabase
-> page instead of completing sign-in.
+> to **Supabase → Authentication → URL Configuration → Redirect URLs**, and set the **Site URL** to
+> `https://viberesume.in`. Without this, the auth redirect bounces to a generic Supabase page.
 
-### Supabase auth gotchas (the ones that cost a session to debug)
+#### Data model & one-time migration
 
-- **Email OTP Length must be 6.** `Authentication → Sign In/Providers → Email → Email OTP Length` is configurable 6–10. The `SignInForm` input has `maxLength={6}` and rejects shorter/longer values as "invalid code." If you ever change this, also update the input.
-- **Update BOTH email templates** — `Authentication → Emails → Templates`:
-  - **Magic Link** (fires for returning users)
-  - **Confirm signup** (fires for *first-time* emails — easy to miss in testing because you keep using new addresses, then assume the template "didn't save")
-  Both should use `{{ .Token }}` in the body (link as a fallback is fine). Same for Invite / Reset Password / Change Email if you use them.
-- **Built-in SMTP cap = 2 emails/hour per project** (not per recipient — bites in testing). The project is wired to **Resend** (`smtp.resend.com:465`, user `resend`, password = `re_...` API key, sender `noreply@viberesume.in`). The sending domain is verified in Resend via DNS (SPF + DKIM + DMARC TXT records). Once custom SMTP is on, bump `Authentication → Rate Limits → Emails per hour` from the default 2.
-- **PKCE links die to email scanners** — Outlook / Gmail safe-links / corporate AV pre-fetch the `/auth/callback?code=...` URL to scan it, consuming the single-use code before the user clicks → "link expired" within seconds. This is why the primary sign-in path is the 6-digit `{{ .Token }}` verified client-side via `verifyOtp({ type: "email" })`; the link is just a fallback.
+- **`users`** mirrors `auth.users` (via the `on_auth_user_created` trigger).
+- **`slugs`** — reservations: `slug` PK, `user_id` FK, `created_at`, a CHECK on `[a-z0-9-]{3,30}`, plus `resume_data jsonb`, `theme_id text`, `published_at timestamptz`, `updated_at timestamptz`. RLS on: anon SELECTs `slug` (availability + public profiles read via service-role); INSERT/UPDATE/DELETE are owner-only.
+- **Lock down draft data on a fresh project** — the public profile reads `resume_data` via service-role, so revoke it from anon:
+  ```sql
+  REVOKE SELECT (resume_data) ON public.slugs FROM anon;
+  ```
 
-## Roadmap
+#### Supabase auth gotchas (the ones that cost a session to debug)
 
-All 10 cluster tools are shipped and the publish epic is complete (Phases 1–3 LIVE as of 2026-06-10). What remains is distribution:
+- **Email OTP Length must be 6.** `Authentication → Sign In/Providers → Email → Email OTP Length` is 6–10; `SignInForm` has `maxLength={6}`. Change one, change both.
+- **Update BOTH email templates** (`Authentication → Emails → Templates`): **Magic Link** (returning users) *and* **Confirm signup** (first-time emails — easy to miss because new test addresses keep hitting it). Both should use `{{ .Token }}`.
+- **Built-in SMTP cap = 2 emails/hour per project** (not per recipient — bites in testing). Wired to **Resend** (`smtp.resend.com:465`, sender `noreply@viberesume.in`, domain verified via SPF/DKIM/DMARC). With custom SMTP on, bump `Authentication → Rate Limits → Emails per hour`.
+- **PKCE links die to email scanners** — they pre-fetch `/auth/callback?code=...` and consume the single-use code, so the primary path is the 6-digit code verified client-side; the link is a fallback.
 
-1. **Phase 1 — Auth + handle claim (LIVE).** OTP-code sign-in (Resend SMTP, 6-digit `{{ .Token }}`, magic link as fallback), slug reservations against verified emails, handle checker wired to truthful availability, claim CTA routed through `/claim/[slug]`, `/account` + `/claim/` blocked in both `robots.ts` and per-page metadata. Shipped 2026-06-09.
-2. **Phase 2 — The actual published page.** **Slice 1 LIVE:** dynamic `app/[slug]/page.tsx` rendering stored `resume_data` via the shared `ResumeSite` component; PDF tool's "Publish" wired to `PATCH /api/slugs/[slug]` via a `sessionStorage` stash → `/account/publish`; account page shows View-live / Publish links per handle. **Slice 2A LIVE:** settings editor (name/headline/summary/contacts/theme), unpublish via DELETE, anon `resume_data` SELECT revoked. **Slice 2B LIVE:** photo upload + replace (browser-side resize, base64 inline — migration trigger documented in `lib/photo.ts`); Skills chip editor; structured sections shown read-only with a "re-upload your PDF to edit" affordance. **Slice 2C LIVE:** publish-multi-kind sweep. `PublishPayload` is now a discriminated union (`kind: "resume" | "developer" | "github"`, missing kind = `"resume"` for backward compat); both #3 Developer Resume and #7 GitHub→Portfolio publish for real (extracted `DevPortfolio` / `GhPortfolio` render components, shared between the in-browser preview and the public profile); `app/[slug]/page.tsx` dispatches on kind. Settings editor is gated to `kind:"resume"` — `developer` / `github` profiles re-publish from their source tool to change (no partial editor — same decision as 2B's "edit Experience but not Education"). Live preview added inside the settings editor (renders the actual `ResumeSite` from current form state, so theme/contact/photo changes are visible while you edit). All non-publishable tools (#1 ATS, #4 Theme Picker, #6 About Me, #9 Case Study) had their decoy "Publish on Vibe Resume" CTAs **removed** — they don't produce a publishable site, and the copy-paste error implied otherwise. #5 LinkedIn URL + #8 QR keep their "claim handle" CTAs but now route through the real handle-checker → `/claim/[slug]` flow, not the signup decoy. **Slice 3** folded into Phase 3 below (generic non-resume editor stays deferred until there's demand).
-3. **Phase 3 — Hardening (LIVE).** Two-action handle model: **unpublish** (`DELETE`, keeps reservation + data) vs **release** (`DELETE ?release=1`, deletes the row and frees the handle — per-handle button on `/account`). **GDPR one-click purge:** `DELETE /api/account` deletes every owned slug row (resume data + photos live inline in `resume_data`, so row deletes ARE the purge) then the auth user; "Danger zone" section on `/account`. **Abuse guards** (zero new deps; Upstash is the upgrade path if real abuse appears): 5-handle claim cap per user (`lib/claims.ts`) + 10s min interval between re-publishes of a live page. **Sitemap** now includes published profiles dynamically (`revalidate = 3600`; env-guarded → static-only in CI/unit, hermetic). **Robots** additionally blocks `/auth/`. **Slug-squat TTL:** daily Vercel cron (`vercel.json` → `GET /api/cron/reap-slugs`, auth'd by the `CRON_SECRET` env var) deletes reservations 30+ days old that were never published AND hold no data — drafts and previously-published pages are never reaped. Setup: add `CRON_SECRET` (any long random string) on Vercel — server-only var, no NEXT_PUBLIC/Sensitive gotchas, but it must exist in Production scope and needs a redeploy to take effect.
-4. **Post-Phase-3 UX/growth sweep (LIVE, from the first manual regression run).** Per-row **Unpublish** on `/account` for every kind (previously only resume-kind had it, inside settings — non-resume pages could only be released). All destructive actions (unpublish/release/delete account) use an **inline two-step confirm** (first click arms + shows the consequence + Cancel; second executes) instead of `window.confirm`. A valid-but-unclaimed `/{slug}` now renders a **"this handle is available — claim it" invite** (noindex) instead of a bare 404 — every shared/mistyped URL is an acquisition surface; claimed-but-unpublished and invalid slugs still 404. Published profiles carry a small **"Made with Vibe Resume · claim your free handle"** footer — the viral loop on the most-shared pages we have.
-5. **SEO & distribution.** GSC + IndexNow submitted (2026-06-08). Per-launch distribution per the plan: IH, r/resumes, r/cscareerquestions, Show HN, Product Hunt.
+## Status
+
+All 10 tools and the full publish flow (sign-in, claim, publish, edit, unpublish, release, account deletion, public profile) are **live**. Remaining work is **distribution**, not features: Search Console indexing + backlinks (Show HN, Product Hunt, r/resumes, the GitHub repo), and growth experiments. View counts on `/account` activate once the optional PostHog read vars are set.
+
+## License
+
+See [`LICENSE`](LICENSE) if present; otherwise all rights reserved by the author.
