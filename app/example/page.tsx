@@ -45,7 +45,7 @@ export default function ExamplePage() {
           borderRadius: 12, overflow: "hidden", background: "var(--background)",
         }}
       >
-        <ResumeSite data={data} photoUrl="" themeId="" />
+        <ResumeSite data={data} photoUrl="" themeId="" availability="Open to senior product design roles · Remote or San Francisco" />
       </div>
     </main>
   );

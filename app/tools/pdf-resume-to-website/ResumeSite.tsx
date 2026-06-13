@@ -1,4 +1,5 @@
 import type { ResumeData } from "@/lib/resume";
+import { parseContactLine, primaryEmail } from "@/lib/resume.ts";
 import { getTheme, themeStyle } from "@/lib/themes.ts";
 import styles from "./converter.module.css";
 
@@ -9,12 +10,17 @@ export default function ResumeSite({
   data,
   photoUrl,
   themeId,
+  availability,
 }: {
   data: ResumeData;
   photoUrl: string;
   themeId: string;
+  /** Optional "open to…" line; renders a Get-in-touch CTA when an email exists. */
+  availability?: string;
 }) {
   const style = themeId ? (themeStyle(getTheme(themeId)) as React.CSSProperties) : undefined;
+  const email = primaryEmail(data.contactLines);
+  const showCta = !!(availability?.trim() || email);
   return (
     <article className={styles.site} style={style}>
       <header className={styles.siteHero}>
@@ -26,10 +32,40 @@ export default function ResumeSite({
           <h1 className={styles.siteName}>{data.name}</h1>
           {data.title && <p className={styles.siteRole}>{data.title}</p>}
           {data.contactLines.length > 0 && (
-            <p className={styles.siteContact}>{data.contactLines.join("  ·  ")}</p>
+            <p className={styles.siteContact}>
+              {data.contactLines.flatMap((line) => parseContactLine(line)).map((part, i, all) => (
+                <span key={i}>
+                  {part.href ? (
+                    <a
+                      href={part.href}
+                      className={styles.contactLink}
+                      {...(part.href.startsWith("http")
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                    >
+                      {part.text}
+                    </a>
+                  ) : (
+                    part.text
+                  )}
+                  {i < all.length - 1 && <span aria-hidden>{"  ·  "}</span>}
+                </span>
+              ))}
+            </p>
           )}
         </div>
       </header>
+
+      {showCta && (
+        <div className={styles.cta}>
+          {availability?.trim() && <p className={styles.ctaAvail}>{availability.trim()}</p>}
+          {email && (
+            <a href={`mailto:${email}`} className={styles.ctaBtn}>
+              Get in touch
+            </a>
+          )}
+        </div>
+      )}
 
       {data.summary && (
         <section className={styles.siteSection}>

@@ -23,6 +23,10 @@ export interface ResumePayload {
   resume: ResumeData;
   photoUrl: string;
   themeId: string;
+  /** Owner's "what I'm looking for" line shown above the resume with a
+   *  Get-in-touch CTA (e.g. "Open to senior design roles · Remote / SF").
+   *  Optional — legacy rows and other tools have none. */
+  availability?: string;
 }
 export interface DeveloperPayload {
   kind: "developer";
@@ -174,7 +178,10 @@ export function validatePublishPayload(raw: unknown): ValidationResult {
       return { ok: false, reason: "bad_shape" };
     }
     if (!validateResume(d.resume)) return { ok: false, reason: "bad_resume" };
-    return { ok: true, payload: { kind: "resume", resume: d.resume as ResumeData, photoUrl: d.photoUrl, themeId: d.themeId } };
+    if (d.availability !== undefined && !isStr(d.availability)) return { ok: false, reason: "bad_shape" };
+    const payload: ResumePayload = { kind: "resume", resume: d.resume as ResumeData, photoUrl: d.photoUrl, themeId: d.themeId };
+    if (isStr(d.availability) && d.availability.trim()) payload.availability = d.availability.trim();
+    return { ok: true, payload };
   }
 
   if (kind === "developer") {

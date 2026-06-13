@@ -6,6 +6,7 @@ import { checkSlugLocal } from "@/lib/slugAvailability.ts";
 import ResumeSite from "../tools/pdf-resume-to-website/ResumeSite";
 import DevPortfolio from "../tools/developer-resume-to-portfolio/DevPortfolio";
 import GhPortfolio from "../tools/github-to-portfolio/GhPortfolio";
+import PrintButton from "./PrintButton";
 
 // Public profile at viberesume.in/{slug}. Static segments under app/ (tools/,
 // signup, account, etc.) and reserved slugs (lib/reservedSlugs.ts) win first
@@ -118,9 +119,17 @@ export default async function PublicProfilePage({ params }: Ctx) {
 
   const { payload } = loaded;
   return (
-    <main style={{ maxWidth: 980, margin: "0 auto", padding: "32px 16px" }}>
+    <main style={{ maxWidth: 980, margin: "0 auto", padding: "32px 16px" }} data-print-root>
+      <div className="print-hide" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <PrintButton />
+      </div>
       {payload.kind === "resume" && (
-        <ResumeSite data={payload.resume} photoUrl={payload.photoUrl} themeId={payload.themeId} />
+        <ResumeSite
+          data={payload.resume}
+          photoUrl={payload.photoUrl}
+          themeId={payload.themeId}
+          availability={payload.availability}
+        />
       )}
       {payload.kind === "developer" && (
         <DevPortfolio data={payload.profile} repos={payload.repos} />
@@ -128,7 +137,7 @@ export default async function PublicProfilePage({ params }: Ctx) {
       {payload.kind === "github" && (
         <GhPortfolio profile={payload.profile} />
       )}
-      <footer style={{ textAlign: "center", marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+      <footer className="print-hide" style={{ textAlign: "center", marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
         <a href="/" style={{ color: "var(--muted)", fontSize: 13, textDecoration: "none" }}>
           Made with <strong style={{ color: "var(--text)" }}>Vibe Resume</strong> · claim your free handle →
         </a>

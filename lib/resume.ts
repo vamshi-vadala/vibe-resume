@@ -448,6 +448,50 @@ export function parseResume(input: string | TextLine[]): ResumeData {
   };
 }
 
+// ----- Clickable contacts (live-page rendering) ----------------------------
+
+/** One token of a contact line: display text plus a link target when the token
+ *  is an email / phone / URL, or null for plain text (e.g. a city). */
+export interface ContactPart { text: string; href: string | null }
+
+// Contact lines are commonly one PDF line glued together ("City · email · phone
+// · linkedin"); split on the usual visual separators before classifying.
+const CONTACT_SPLIT = /\s*[·•|]\s*|\s{2,}/;
+
+function classifyContactToken(text: string): ContactPart {
+  const email = text.match(EMAIL);
+  if (email) return { text, href: `mailto:${email[0]}` };
+  const url = text.match(URL) || text.match(LINKEDIN) || text.match(GITHUB);
+  if (url) {
+    const u = url[0];
+    return { text, href: /^https?:\/\//i.test(u) ? u : `https://${u}` };
+  }
+  const phone = text.match(PHONE);
+  if (phone && phone[0].replace(/\D/g, "").length >= 7) {
+    return { text, href: `tel:${phone[0].replace(/[^\d+]/g, "")}` };
+  }
+  return { text, href: null };
+}
+
+/** Split a stored contact line into clickable parts for the live page. */
+export function parseContactLine(line: string): ContactPart[] {
+  return line
+    .split(CONTACT_SPLIT)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map(classifyContactToken);
+}
+
+/** First email found across all contact lines (for the "Get in touch" CTA),
+ *  or "" when none is present. */
+export function primaryEmail(contactLines: string[]): string {
+  for (const line of contactLines) {
+    const m = line.match(EMAIL);
+    if (m) return m[0];
+  }
+  return "";
+}
+
 /** Does this parsed resume look like our "Try a sample" demo data? Used to
  *  warn before someone publishes Jane Doe to their real handle, and to badge
  *  demo-data handles on /account. Name + sample email together keep the

@@ -5,7 +5,7 @@ import styles from "./chrome.module.css";
 // Server component — a static link mesh on every page (good for users and SEO).
 export default function SiteFooter() {
   return (
-    <footer className={styles.footer}>
+    <footer className={styles.footer} data-site-footer>
       <div className={styles.footerInner}>
         <div className={styles.footerBrand}>
           <Link href="/" className={styles.brand} aria-label="Vibe Resume home">

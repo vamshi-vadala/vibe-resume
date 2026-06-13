@@ -29,6 +29,13 @@ Run before every `git push` to main that touches anything user-facing.
 ### 0. Public-slug surfaces (≤1 min)
 - 👁 A published profile shows the "Made with Vibe Resume · claim
   your free handle" footer linking home.
+- 👁 Contacts on a published profile are clickable: email → mail
+  client, phone → dialer, URL → new tab (not dead joined text).
+- 👁 **Download PDF** (top-right) opens the print dialog; the
+  preview/saved file is the resume only — no header/footer/button,
+  white background even if the site theme is dark.
+- 👁 If the owner set an availability line, it shows at the top with
+  a **Get in touch** button that opens a `mailto:` to their email.
 - 👁 An unclaimed valid slug (e.g. `/definitely-free-handle-xyz`)
   shows the "this handle is available — claim it" invite (noindex),
   NOT a bare 404. A claimed-but-unpublished slug still 404s.
@@ -89,6 +96,8 @@ Run before every `git push` to main that touches anything user-facing.
 - 👁 Settings page shows the live preview at the top.
 - 👁 Change the name or click a different theme → preview updates
   inline.
+- 👁 Set the **Availability / what you want** field → preview shows
+  the line + a **Get in touch** button; clearing it hides the block.
 - 👁 **Save changes** → success message → click **View live ↗** →
   live profile reflects the change. Reload to confirm it's persisted.
 

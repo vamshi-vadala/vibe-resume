@@ -35,6 +35,7 @@ export default function SettingsClient({
   const [name, setName] = useState(initial.resume.name);
   const [title, setTitle] = useState(initial.resume.title);
   const [summary, setSummary] = useState(initial.resume.summary);
+  const [availability, setAvailability] = useState(initial.availability ?? "");
   const [contacts, setContacts] = useState<string[]>(initial.resume.contactLines);
   const [skills, setSkills] = useState<string[]>(initial.resume.skills);
   const [photoUrl, setPhotoUrl] = useState(initial.photoUrl);
@@ -70,6 +71,7 @@ export default function SettingsClient({
       kind: "resume",
       themeId,
       photoUrl,
+      ...(availability.trim() ? { availability: availability.trim() } : {}),
       resume: {
         ...initial.resume,
         name: name.trim(),
@@ -142,7 +144,7 @@ export default function SettingsClient({
           <span style={{ marginLeft: 8 }}>viberesume.in/{slug} · live preview</span>
         </div>
         <div style={{ padding: 16 }}>
-          <ResumeSite data={previewResume} photoUrl={photoUrl} themeId={themeId} />
+          <ResumeSite data={previewResume} photoUrl={photoUrl} themeId={themeId} availability={availability.trim()} />
         </div>
       </section>
 
@@ -205,6 +207,17 @@ export default function SettingsClient({
       <div>
         <label htmlFor="title" style={labelStyle}>Headline / role</label>
         <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} style={fieldStyle} placeholder="Senior Product Designer" />
+      </div>
+
+      <div>
+        <label htmlFor="availability" style={labelStyle}>Availability / what you want</label>
+        <input
+          id="availability" value={availability} onChange={(e) => setAvailability(e.target.value)}
+          style={fieldStyle} placeholder="Open to senior design roles · Remote or SF"
+        />
+        <span style={{ display: "block", color: "var(--muted)", fontSize: 12, marginTop: 6 }}>
+          Shown at the top with a “Get in touch” button (uses your contact email). Leave blank to hide.
+        </span>
       </div>
 
       <div>

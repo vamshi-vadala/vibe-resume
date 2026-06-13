@@ -112,7 +112,7 @@ The only edit path today is re-publish (overwrites). Settings panel, unpublish, 
 
 ### Slice 2A — settings + unpublish + tightened reads
 
-- **`/account/[slug]/settings`** is a server component that loads the slug row, redirects non-owners to `/account`, redirects "reserved but never published" handles to `/account/publish`, and mounts `SettingsClient` with the validated `PublishPayload`. The client form edits photo, name, headline, summary, contact links, skills, and theme; on save it sends the full payload (preserving `sections` from the loaded row) to `PATCH /api/slugs/[slug]`. Bullet-level editing of structured sections (Experience entries, Education, Projects) is intentionally not in scope — re-uploading the PDF is the edit path for those.
+- **`/account/[slug]/settings`** is a server component that loads the slug row, redirects non-owners to `/account`, redirects "reserved but never published" handles to `/account/publish`, and mounts `SettingsClient` with the validated `PublishPayload`. The client form edits photo, name, headline, availability, summary, contact links, skills, and theme; on save it sends the full payload (preserving `sections` from the loaded row) to `PATCH /api/slugs/[slug]`. Bullet-level editing of structured sections (Experience entries, Education, Projects) is intentionally not in scope — re-uploading the PDF is the edit path for those.
 - **`DELETE /api/slugs/[slug]`** is owner-only and sets `published_at = null` (keeps the reservation + `resume_data` so the user can re-publish later). Releasing the handle entirely is `DELETE ?release=1` (Phase 3).
 - **Tightened anon SELECT**: the `resume_data` column has been revoked from the `anon` role so a draft profile can't be read by anyone with the publishable key. The public profile page now reads via the service-role client (it scopes itself to `published_at IS NOT NULL`, so service-role usage stays narrow). Handle availability checks are unaffected — they only select `slug`. **The accompanying SQL migration that ships with this slice MUST be applied in the Supabase dashboard:**
 
@@ -121,6 +121,16 @@ The only edit path today is re-publish (overwrites). Settings panel, unpublish, 
   -- service-role (server-side, scoped to published_at IS NOT NULL).
   REVOKE SELECT (resume_data) ON public.slugs FROM anon;
   ```
+
+### Live page (`/[slug]`) — function-first rework (UX overhaul 2026-06-14)
+
+The published page is a *document whose job is to get the owner contacted*, not a landing page. Three additions make it pull its weight over the static PDF:
+
+- **Availability + "Get in touch" CTA** — `ResumePayload` gains an optional `availability` string (e.g. "Open to senior design roles · Remote / SF"), edited on `/account/[slug]/settings` ("Availability / what you want" field) and validated in `lib/publish.ts`. `ResumeSite` renders it at the top with a **Get in touch** button (`mailto:` the first email found in `contactLines` via `primaryEmail()`); the block is hidden when there's neither an availability line nor an email. Other publish kinds and legacy rows simply omit it.
+- **Clickable contacts** — `contactLines` used to render as dead joined text. `parseContactLine()` (pure, in `lib/resume.ts`) splits each line on visual separators and classifies tokens into `mailto:` / `tel:` / `https://` links (external links get `target=_blank rel=noopener`); plain tokens like a city stay text. Same render flows through the editor preview, `/example`, and every live profile.
+- **Download PDF** — `app/[slug]/PrintButton.tsx` (client) calls `window.print()`; a `@media print` block in `globals.css` zeroes the theme to white, hides all chrome (`data-site-header`/`data-site-footer`, `.print-hide`, the button itself) and promotes `[data-print-root]` so the saved file is just the resume. No new deps, nothing stored server-side — recruiters get a file for their ATS.
+
+Still deferred (notes in memory `vibe-resume-ux-overhaul`): Person JSON-LD + per-profile OG image (Satori), and the minimal-chrome route-group layout for `/[slug]`.
 
 ### Supabase data model
 
@@ -165,7 +175,7 @@ app/
   account/                    # signed-in user dashboard (handles + sign-out)
   account/publish/            # Phase 2 publish landing (reads sessionStorage stash + PATCHes)
   account/[slug]/settings/    # Phase 2 editor (name/title/summary/contacts/theme + unpublish)
-  [slug]/page.tsx             # public profile route — SSR-renders published resume_data
+  [slug]/page.tsx             # public profile route — SSR-renders published resume_data (CTA, clickable contacts, Download PDF)
   api/slugs/[slug]/route.ts   # GET availability / POST claim / PATCH publish / DELETE unpublish
   tools/<slug>/               # one dir per tool:
     page.tsx                  #   metadata + JSON-LD + how-it-works + cross-links + FAQ

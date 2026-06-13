@@ -104,6 +104,34 @@ a {
   text-decoration: none;
 }
 
+/* Public-profile "Download PDF" button (app/[slug]/PrintButton.tsx) */
+[data-print-button] {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+[data-print-button]:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Print / Save-as-PDF of a public profile: drop all site chrome (header,
+   footer, the Download button) so the saved file is just the resume, on a
+   white page regardless of the on-screen theme. */
+@media print {
+  :root, :root[data-theme="dark"] {
+    --background: #fff; --text: #000; --muted: #333; --line: #ccc;
+    --panel: #fff; --panel2: #fff;
+  }
+  body * { visibility: hidden; }
+  [data-print-root], [data-print-root] * { visibility: visible; }
+  [data-print-root] { position: absolute; inset: 0; margin: 0; padding: 0; max-width: none; }
+  .print-hide, header[data-site-header], footer[data-site-footer] { display: none !important; }
+}
+
 /* smooth, subtle fade when the theme changes (not on first paint) */
 @media (prefers-reduced-motion: no-preference) {
   *, *::before, *::after {

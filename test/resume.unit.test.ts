@@ -2,7 +2,7 @@
 // and the safety net that lets us refactor lib/resume.ts without silent regressions.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseResume, linesFromItems, formatBarePhones, looksLikeSampleResume, SAMPLE_RESUME_TEXT, type PositionedItem, type TextLine } from "../lib/resume.ts";
+import { parseResume, linesFromItems, formatBarePhones, looksLikeSampleResume, parseContactLine, primaryEmail, SAMPLE_RESUME_TEXT, type PositionedItem, type TextLine } from "../lib/resume.ts";
 
 const L = (text: string, size = 0): TextLine => ({ text, size });
 const item = (str: string, x: number, y: number, w = 50, size = 12): PositionedItem => ({ str, x, y, w, size });
@@ -36,6 +36,33 @@ test("name is the largest-font name-looking line, not the first line", () => {
     L("Travel things", 9),
   ]);
   assert.equal(d.name, "Esther Scott");
+});
+
+// ---- parseContactLine / primaryEmail: clickable live-page contacts -------
+
+test("parseContactLine makes email, phone, and url tokens clickable", () => {
+  const parts = parseContactLine("San Francisco, CA · jane@example.com · (415) 555-0192 · linkedin.com/in/jane-doe");
+  const byText = Object.fromEntries(parts.map((p) => [p.text, p.href]));
+  assert.equal(byText["San Francisco, CA"], null);
+  assert.equal(byText["jane@example.com"], "mailto:jane@example.com");
+  assert.equal(byText["(415) 555-0192"], "tel:4155550192");
+  assert.equal(byText["linkedin.com/in/jane-doe"], "https://linkedin.com/in/jane-doe");
+});
+
+test("parseContactLine keeps an explicit https:// scheme and handles a bare github url", () => {
+  assert.equal(parseContactLine("https://jane.dev")[0].href, "https://jane.dev");
+  assert.equal(parseContactLine("github.com/janedoe")[0].href, "https://github.com/janedoe");
+});
+
+test("parseContactLine leaves plain text non-clickable", () => {
+  const parts = parseContactLine("Available for relocation");
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0].href, null);
+});
+
+test("primaryEmail extracts the first email across contact lines, else empty", () => {
+  assert.equal(primaryEmail(["San Francisco · jane@example.com · (415) 555-0192"]), "jane@example.com");
+  assert.equal(primaryEmail(["(415) 555-0192", "linkedin.com/in/jane"]), "");
 });
 
 test("splits 'NAME, Title' on the same line", () => {
