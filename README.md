@@ -130,7 +130,9 @@ The published page is a *document whose job is to get the owner contacted*, not 
 - **Clickable contacts** — `contactLines` used to render as dead joined text. `parseContactLine()` (pure, in `lib/resume.ts`) splits each line on visual separators and classifies tokens into `mailto:` / `tel:` / `https://` links (external links get `target=_blank rel=noopener`); plain tokens like a city stay text. Same render flows through the editor preview, `/example`, and every live profile.
 - **Download PDF** — `app/[slug]/PrintButton.tsx` (client) calls `window.print()`; a `@media print` block in `globals.css` zeroes the theme to white, hides all chrome (`data-site-header`/`data-site-footer`, `.print-hide`, the button itself) and promotes `[data-print-root]` so the saved file is just the resume. No new deps, nothing stored server-side — recruiters get a file for their ATS.
 
-Still deferred (notes in memory `vibe-resume-ux-overhaul`): Person JSON-LD + per-profile OG image (Satori), and the minimal-chrome route-group layout for `/[slug]`.
+**Discoverability + share (items 4):** `app/[slug]/profile.ts` centralises the loader + metadata derivation, shared by the page and the OG image. The page emits **schema.org `Person` JSON-LD** (`name`, `jobTitle`, `url`, `email`, and `sameAs` derived from contact-line URLs) so it ranks for the owner's name. `app/[slug]/opengraph-image.tsx` (Next `ImageResponse` / Satori — no new dep) renders a **per-profile share card** (name + headline on the brand gradient), with a generic fallback for unclaimed/unpublished slugs so unfurls never break.
+
+**Minimal chrome (item 5):** the platform header + 10-tool footer were competing with the owner's identity on a profile. Chrome now lives in an `app/(site)/` **route group** (its `layout.tsx` renders `SiteHeader` + `SiteFooter`); every normal route moved under `(site)` (URLs unchanged — route groups don't affect paths). The root `app/layout.tsx` keeps only `<html>/<body>` + `Analytics`, and `app/[slug]` sits *outside* `(site)`, so a public profile renders with no platform chrome — just the resume, its own one-line "Made with Vibe Resume" viral footer, and an **owner-only slim bar** (`OwnerBar.tsx`, env-guarded client island: shows "This is your live site · Edit · Copy link · Account" only when the signed-in viewer owns the slug; renders nothing for everyone else).
 
 ### Supabase data model
 
@@ -162,26 +164,27 @@ Still deferred (notes in memory `vibe-resume-ux-overhaul`): Person JSON-LD + per
 
 ```
 app/
-  layout.tsx                  # html shell, header/footer, no-FOUC theme init script
-  globals.css                 # theme tokens (light + dark + data-theme overrides)
-  page.tsx  page.module.css   # goal-grouped landing page
+  layout.tsx                  # root: html/body + no-FOUC theme init + Analytics ONLY (no chrome)
+  globals.css                 # theme tokens (light + dark + data-theme overrides) + @media print
   providers.tsx               # PostHog analytics wiring
-  SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx chrome.module.css   # global nav + theme toggle
+  SiteHeader.tsx SiteFooter.tsx ThemeToggle.tsx UserMenu.tsx chrome.module.css   # global nav + theme toggle
   sitemap.ts robots.ts manifest.ts icon.svg   # SEO/PWA metadata routes + brand icon
-  privacy/ terms/ contact/    # legal + contact pages (legal.module.css)
-  signup/                     # magic-link sign-in (server component + SignInForm client island)
-  auth/callback/route.ts      # magic-link return — exchanges code for session, redirects to ?next
-  claim/[slug]/page.tsx       # server-side slug claim landing (auth-gates + inserts)
-  account/                    # signed-in user dashboard (handles + sign-out)
-  account/publish/            # Phase 2 publish landing (reads sessionStorage stash + PATCHes)
-  account/[slug]/settings/    # Phase 2 editor (name/title/summary/contacts/theme + unpublish)
-  [slug]/page.tsx             # public profile route — SSR-renders published resume_data (CTA, clickable contacts, Download PDF)
+  (site)/                     # route group: everything WITH platform chrome (URLs unchanged)
+    layout.tsx                #   renders SiteHeader + SiteFooter around its children
+    page.tsx page.module.css  #   goal-grouped landing page
+    HomeAccountBand.tsx ToolIcon.tsx NextSteps.tsx   # home/tool shared islands
+    privacy/ terms/ contact/  #   legal + contact pages (legal.module.css)
+    signup/                   #   OTP sign-in (server component + SignInForm client island)
+    claim/[slug]/page.tsx     #   server-side slug claim landing (auth-gates + inserts)
+    account/                  #   signed-in dashboard; account/publish/; account/[slug]/settings/
+    tools/<slug>/             #   one dir per tool (page + <Client> + *.module.css + opengraph-image)
+  [slug]/                     # public profile — OUTSIDE (site), so NO platform chrome:
+    page.tsx                  #   SSR profile + Person JSON-LD (CTA, clickable contacts)
+    profile.ts                #   shared loader + metadata/JSON-LD derivation (server-only)
+    opengraph-image.tsx       #   per-profile share card (Satori)
+    PrintButton.tsx OwnerBar.tsx   # Download-PDF + owner-only Edit/Share island
+  auth/callback/route.ts      # OTP/magic-link return — exchanges code for session, redirects to ?next
   api/slugs/[slug]/route.ts   # GET availability / POST claim / PATCH publish / DELETE unpublish
-  tools/<slug>/               # one dir per tool:
-    page.tsx                  #   metadata + JSON-LD + how-it-works + cross-links + FAQ
-    <Client>.tsx              #   "use client" tool UI (Converter / Deck / Generator / …)
-    *.module.css              #   tool styles (semantic tokens)
-    opengraph-image.tsx       #   per-tool OG image
 lib/
   tools.ts                    # single source of truth: TOOLS registry + goal groups
   ats.ts resume.ts            # ATS + PDF-resume parsers

@@ -36,6 +36,12 @@ Run before every `git push` to main that touches anything user-facing.
   white background even if the site theme is dark.
 - 👁 If the owner set an availability line, it shows at the top with
   a **Get in touch** button that opens a `mailto:` to their email.
+- 👁 A published profile has **no platform header / 10-tool footer** —
+  just the resume + the one-line "Made with Vibe Resume" footer.
+  (Every other page still has the full header + footer.)
+- 👁 Signed in as the owner, the profile shows a slim **"This is your
+  live site · Edit · Copy link · Account"** bar at the top. Signed out
+  / as anyone else, that bar is absent.
 - 👁 An unclaimed valid slug (e.g. `/definitely-free-handle-xyz`)
   shows the "this handle is available — claim it" invite (noindex),
   NOT a bare 404. A claimed-but-unpublished slug still 404s.
@@ -196,6 +202,10 @@ Verify the de-decoy sweep stuck. None of these tools should render a
   - `<meta name="description">` from summary/about, truncated to 160
   - `<link rel="canonical" href="https://viberesume.in/{slug}">`
   - `<meta property="og:title">` + `og:description` match
+  - `og:image` points at `/{slug}/opengraph-image` — open it: a
+    branded card with the person's name + headline renders (1200×630).
+  - a `<script type="application/ld+json">` Person block with `name`,
+    `jobTitle`, `url`, and `sameAs`/`email` when present.
 - 👁 `viberesume.in/sitemap.xml` — loads, lists tools + legal
   pages + published profiles (Phase 3; hourly revalidate, so a
   just-published profile can take up to an hour to appear).

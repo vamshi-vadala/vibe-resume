@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { THEMES } from "@/lib/themes.ts";
 import type { ResumePayload } from "@/lib/publish.ts";
 import { resizePhotoToDataUrl, photoErrorMessage } from "@/lib/photo.ts";
-import ResumeSite from "@/app/tools/pdf-resume-to-website/ResumeSite";
+import ResumeSite from "@/app/(site)/tools/pdf-resume-to-website/ResumeSite";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 

@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin.ts";
-import { validatePublishPayload, type PublishPayload } from "@/lib/publish.ts";
-import { checkSlugLocal } from "@/lib/slugAvailability.ts";
-import ResumeSite from "../tools/pdf-resume-to-website/ResumeSite";
-import DevPortfolio from "../tools/developer-resume-to-portfolio/DevPortfolio";
-import GhPortfolio from "../tools/github-to-portfolio/GhPortfolio";
+import ResumeSite from "@/app/(site)/tools/pdf-resume-to-website/ResumeSite";
+import DevPortfolio from "@/app/(site)/tools/developer-resume-to-portfolio/DevPortfolio";
+import GhPortfolio from "@/app/(site)/tools/github-to-portfolio/GhPortfolio";
 import PrintButton from "./PrintButton";
+import OwnerBar from "./OwnerBar";
+import { loadProfile, titleForMeta, descForMeta, personJsonLd } from "./profile.ts";
 
 // Public profile at viberesume.in/{slug}. Static segments under app/ (tools/,
 // signup, account, etc.) and reserved slugs (lib/reservedSlugs.ts) win first
@@ -14,52 +13,13 @@ import PrintButton from "./PrintButton";
 // renders a noindex "claim this handle" invite; claimed-but-unpublished or
 // invalid slugs 404.
 //
-// Reads via the service-role client because the anon role no longer has SELECT
-// on the `resume_data` column. This page itself filters `published_at IS NOT
-// NULL`, so service-role usage is scoped to "render a public profile" and
-// never returns draft data. Render dispatches on `payload.kind`:
+// Load + metadata derivation live in ./profile.ts (shared with
+// opengraph-image.tsx). Render dispatches on `payload.kind`:
 //   "resume"    → ResumeSite (PDF-parsed resume)
 //   "developer" → DevPortfolio (Developer Resume tool)
 //   "github"    → GhPortfolio (GitHub username tool)
 
 type Ctx = { params: Promise<{ slug: string }> };
-type Loaded =
-  | { kind: "profile"; slug: string; payload: PublishPayload }
-  | { kind: "claimable"; slug: string } // valid, unreserved, unclaimed → invite
-  | null;                               // invalid/reserved/claimed-but-hidden → 404
-
-async function loadProfile(slug: string): Promise<Loaded> {
-  if (checkSlugLocal(slug)) return null;
-  const admin = createSupabaseAdminClient();
-  const { data } = await admin
-    .from("slugs")
-    .select("slug, resume_data, published_at")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (!data) return { kind: "claimable", slug };
-  if (!data.published_at || !data.resume_data) return null;
-  const validated = validatePublishPayload(data.resume_data);
-  if (!validated.ok) return null;
-  return { kind: "profile", slug: data.slug, payload: validated.payload };
-}
-
-function nameForMeta(p: PublishPayload): string {
-  if (p.kind === "github") return p.profile.name;
-  if (p.kind === "developer") return p.profile.name;
-  return p.resume.name;
-}
-function descForMeta(p: PublishPayload): string {
-  if (p.kind === "github") return p.profile.about || p.profile.headline;
-  if (p.kind === "developer") return p.profile.summary || p.profile.headline;
-  return p.resume.summary || `${p.resume.name}'s resume on Vibe Resume.`;
-}
-function titleForMeta(p: PublishPayload): string {
-  const name = nameForMeta(p);
-  const subtitle = p.kind === "resume" ? p.resume.title
-    : p.kind === "developer" ? p.profile.headline
-    : p.profile.headline;
-  return subtitle ? `${name} — ${subtitle}` : `${name} · Vibe Resume`;
-}
 
 export async function generateMetadata({ params }: Ctx): Promise<Metadata> {
   const { slug: raw } = await params;
@@ -120,6 +80,11 @@ export default async function PublicProfilePage({ params }: Ctx) {
   const { payload } = loaded;
   return (
     <main style={{ maxWidth: 980, margin: "0 auto", padding: "32px 16px" }} data-print-root>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd(payload, loaded.slug)) }}
+      />
+      <OwnerBar slug={loaded.slug} />
       <div className="print-hide" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <PrintButton />
       </div>

@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "./providers";
-import SiteHeader from "./SiteHeader";
-import SiteFooter from "./SiteFooter";
-import chrome from "./chrome.module.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,11 +34,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-        <Analytics>
-          <SiteHeader />
-          <div className={chrome.main}>{children}</div>
-          <SiteFooter />
-        </Analytics>
+        <Analytics>{children}</Analytics>
       </body>
     </html>
   );
