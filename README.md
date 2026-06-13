@@ -8,6 +8,7 @@
 [![Built with Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Stars](https://img.shields.io/github/stars/vamshi-vadala/vibe-resume?style=flat-square)](https://github.com/vamshi-vadala/vibe-resume/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 [![Vibe Resume — a resume rendered as a clean personal website](https://viberesume.in/tools/pdf-resume-to-website/opengraph-image)](https://viberesume.in)
 
@@ -228,4 +229,4 @@ All 10 tools and the full publish flow (sign-in, claim, publish, edit, unpublish
 
 ## License
 
-See [`LICENSE`](LICENSE) if present; otherwise all rights reserved by the author.
+[MIT](LICENSE) © Vamshi Vadala
